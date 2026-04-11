@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Deep Dive 🌊</title>
@@ -10,19 +10,58 @@ body {
   overflow: hidden;
   font-family: Arial, sans-serif;
   color: white;
-  background: linear-gradient(-45deg, #001b2e, #004b6e, #007ea7, #00334d);
-  background-size: 400% 400%;
-  animation: oceanShift 12s ease infinite;
+
+  background: radial-gradient(
+    circle at 50% 20%,
+    #2bc4e0 0%,
+    #0b3a55 40%,
+    #00111f 75%,
+    #00070d 100%
+  );
 }
 
-/* animated ocean background */
-@keyframes oceanShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* 🌊 LIGHT RAYS */
+.ocean-light {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.03) 40%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 60%,
+    rgba(255,255,255,0) 100%
+  );
+  animation: lightMove 18s linear infinite;
+  z-index: 1;
 }
 
-/* top input */
+@keyframes lightMove {
+  0% { transform: translateX(-20%); }
+  100% { transform: translateX(20%); }
+}
+
+/* 🌫️ HAZE */
+.water-haze {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 30% 40%,
+    rgba(255,255,255,0.06),
+    transparent 60%
+  );
+  animation: haze 18s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+@keyframes haze {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-20px); }
+}
+
+/* UI LAYER */
 .container {
   position: absolute;
   top: 20px;
@@ -37,6 +76,14 @@ input {
   border-radius: 20px;
   border: none;
   outline: none;
+
+  background: rgba(255,255,255,0.15);
+  color: white;
+  backdrop-filter: blur(6px);
+}
+
+input::placeholder {
+  color: rgba(255,255,255,0.7);
 }
 
 button {
@@ -44,33 +91,42 @@ button {
   border-radius: 20px;
   border: none;
   background: #00c2ff;
+  color: white;
   cursor: pointer;
   margin-left: 8px;
 }
 
-/* ocean container */
+/* 🌊 OCEAN */
 .ocean {
   position: absolute;
   width: 100%;
   height: 100vh;
   overflow: hidden;
+  z-index: 10;
 }
 
-/* 🌊 bubbles (tips) */
+/* 🫧 BUBBLES */
 .bubble {
   position: absolute;
   max-width: 220px;
   padding: 12px 14px;
-  background: rgba(255,255,255,0.15);
+
+  background: rgba(255,255,255,0.22);
+  border: 1px solid rgba(255,255,255,0.4);
   border-radius: 40px;
-  backdrop-filter: blur(6px);
+
+  backdrop-filter: blur(8px);
+  color: white;
+
   font-size: 13px;
   text-align: center;
+
+  box-shadow: 0 0 25px rgba(120,220,255,0.2);
+
   animation: rise 14s ease-in-out forwards;
-  transition: transform 2s ease;
+  z-index: 30;
 }
 
-/* rising + swaying */
 @keyframes rise {
   0% {
     transform: translateY(100vh) scale(0.8);
@@ -79,7 +135,7 @@ button {
   15% { opacity: 1; }
   50% { transform: translateY(40vh) translateX(20px); }
   100% {
-    transform: translateY(-120px) translateX(-10px) scale(1);
+    transform: translateY(-120px) translateX(-10px);
     opacity: 0;
   }
 }
@@ -97,18 +153,18 @@ button {
   100% { transform: translateX(110vw); }
 }
 
-/* 🐬 dolphins */
+/* 🐬 dolphin */
 .dolphin {
   position: absolute;
   font-size: 24px;
   opacity: 0.35;
-  animation: dolphinSwim 22s linear infinite;
+  animation: dolphin 22s linear infinite;
 }
 
-@keyframes dolphinSwim {
-  0% { transform: translateX(-20vw) translateY(0); }
+@keyframes dolphin {
+  0% { transform: translateX(-20vw); }
   50% { transform: translateX(50vw) translateY(-40px); }
-  100% { transform: translateX(120vw) translateY(0); }
+  100% { transform: translateX(120vw); }
 }
 
 /* 🪼 jellyfish */
@@ -117,10 +173,10 @@ button {
   font-size: 22px;
   opacity: 0.4;
   filter: drop-shadow(0 0 10px rgba(255,255,255,0.4));
-  animation: floatJelly 10s ease-in-out infinite;
+  animation: floatJ 10s ease-in-out infinite;
 }
 
-@keyframes floatJelly {
+@keyframes floatJ {
   0%,100% { transform: translateY(0); }
   50% { transform: translateY(-30px); }
 }
@@ -131,24 +187,27 @@ button {
   bottom: 30px;
   width: 100%;
   text-align: center;
-  z-index: 30;
+  z-index: 20;
 }
 
 .bottomText .title {
   font-size: 24px;
   letter-spacing: 2px;
-  opacity: 0.9;
 }
 
 .bottomText .subtitle {
   font-size: 13px;
-  opacity: 0.7;
+  opacity: 0.75;
   margin-top: 6px;
 }
 </style>
 </head>
 
 <body>
+
+<!-- BACKGROUND LAYERS -->
+<div class="ocean-light"></div>
+<div class="water-haze"></div>
 
 <!-- INPUT -->
 <div class="container">
@@ -167,40 +226,30 @@ button {
   <div class="subtitle">what song do you want to take a deep-dive into?</div>
 </div>
 
-<!-- AMBIENT SOUND -->
-<audio autoplay loop>
-  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_5c1b5b1f2c.mp3">
-</audio>
-
 <script>
 const ocean = document.getElementById("ocean");
 const form = document.getElementById("form");
 const input = document.getElementById("input");
 
-/* =========================
-   FIREBASE HOOK (KEEP YOURS HERE)
-   ========================= */
-// const db = firebase.database();
-// const tipsRef = db.ref("tips");
+/* 🔌 FIREBASE (optional plug-in later)
+const db = firebase.database();
+const tipsRef = db.ref("tips");
+*/
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
+
   const text = input.value.trim();
   if (!text) return;
 
   createBubble(text);
 
-  /* SEND TO FIREBASE (if enabled)
-  tipsRef.push({
-    text,
-    time: Date.now()
-  });
-  */
+  /* tipsRef.push({ text, time: Date.now() }); */
 
   input.value = "";
 });
 
-/* 🌊 bubble creation */
+/* 🫧 bubbles */
 function createBubble(text) {
   const b = document.createElement("div");
   b.className = "bubble";
@@ -210,44 +259,36 @@ function createBubble(text) {
   b.style.animationDuration = (10 + Math.random() * 6) + "s";
 
   ocean.appendChild(b);
-
   setTimeout(() => b.remove(), 15000);
 }
 
 /* 🐟 fish */
-function spawnFish() {
+setInterval(() => {
   const f = document.createElement("div");
   f.className = "fish";
   f.innerText = "🐟";
   f.style.top = Math.random() * 80 + "%";
-  f.style.animationDuration = (12 + Math.random() * 10) + "s";
   ocean.appendChild(f);
-}
+}, 3000);
 
 /* 🐬 dolphins */
-function spawnDolphin() {
+setInterval(() => {
   const d = document.createElement("div");
   d.className = "dolphin";
   d.innerText = "🐬";
   d.style.top = Math.random() * 60 + "%";
-  d.style.animationDuration = (18 + Math.random() * 10) + "s";
   ocean.appendChild(d);
-}
+}, 8000);
 
 /* 🪼 jellyfish */
-function spawnJelly() {
+setInterval(() => {
   const j = document.createElement("div");
   j.className = "jelly";
   j.innerText = "🪼";
   j.style.left = Math.random() * 90 + "%";
   j.style.top = Math.random() * 80 + "%";
   ocean.appendChild(j);
-}
-
-/* LIFE LOOP */
-setInterval(spawnFish, 3000);
-setInterval(spawnDolphin, 8000);
-setInterval(spawnJelly, 2500);
+}, 2500);
 </script>
 
 </body>
