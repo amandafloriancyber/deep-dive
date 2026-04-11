@@ -2,39 +2,804 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Deep Dive 🌊</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>deep-dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  font-family: Arial, sans-serif;
-  color: white;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  background: radial-gradient(
-    circle at 50% 20%,
-    #2bc4e0 0%,
-    #0b3a55 40%,
-    #00111f 75%,
-    #00070d 100%
-  );
+  body {
+    background: #021828;
+    height: 100vh; width: 100vw;
+    overflow: hidden;
+    font-family: 'Jost', sans-serif;
+  }
+
+  #ocean-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: linear-gradient(to bottom,
+      #021828 0%, #032030 20%, #053545 45%,
+      #084060 70%, #0a5570 85%, #0d7a8a 100%);
+  }
+
+  #water-shift {
+    position: fixed; inset: 0; z-index: 1;
+    background: radial-gradient(ellipse 80% 60% at 50% 120%, rgba(13,122,138,0.3) 0%, transparent 70%);
+    animation: waterBreath 9s ease-in-out infinite alternate;
+  }
+  @keyframes waterBreath {
+    0%   { transform: scaleX(1) translateY(0); opacity: 0.5; }
+    100% { transform: scaleX(1.08) translateY(-15px); opacity: 0.9; }
+  }
+
+  canvas { position: fixed; inset: 0; pointer-events: none; }
+  #rays-canvas  { z-index: 2; }
+  #haze-canvas  { z-index: 3; }
+  #part-canvas  { z-index: 4; }
+  #creat-canvas { z-index: 5; pointer-events: all; cursor: default; }
+
+  #bubbles-container {
+    position: fixed; inset: 0; z-index: 6; pointer-events: none;
+  }
+
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 12px 16px;
+    backdrop-filter: blur(10px);
+    background: radial-gradient(circle at 30% 28%,
+      rgba(255,255,255,0.35),
+      rgba(180,240,255,0.1) 55%,
+      rgba(200,180,255,0.06));
+    border: 1px solid rgba(255,255,255,0.38);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.65),
+      inset 0 -1px 0 rgba(180,220,255,0.12),
+      0 0 22px rgba(160,220,255,0.2),
+      0 0 55px rgba(180,160,255,0.08);
+    color: rgba(255,255,255,0.92);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    pointer-events: none;
+    will-change: transform, opacity;
+    opacity: 0;
+  }
+
+  .bubble.forming {
+    animation: bubbleForm 0.85s cubic-bezier(0.34,1.5,0.64,1) forwards;
+  }
+  @keyframes bubbleForm {
+    0%   { transform: scale(0); opacity: 0; }
+    70%  { opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .bubble.rising {
+    animation: bubbleRise var(--rise-dur) cubic-bezier(0.45,0,0.3,1) forwards;
+    opacity: 1;
+  }
+  @keyframes bubbleRise {
+    0%   { transform: translateY(0px)            translateX(0px)             scale(1); }
+    30%  { transform: translateY(var(--ry30))    translateX(var(--rx30))     scale(1); }
+    60%  { transform: translateY(var(--ry60))    translateX(var(--rx60))     scale(1); }
+    85%  { transform: translateY(var(--ry85))    translateX(var(--rx30))     scale(1); }
+    100% { transform: translateY(var(--ry100))   translateX(0px)             scale(1); }
+  }
+
+  .bubble.settled {
+    pointer-events: all;
+    cursor: pointer;
+    opacity: 1;
+    transform: scale(0.68);
+    transition:
+      transform 0.55s cubic-bezier(0.34,1.2,0.64,1),
+      box-shadow 0.3s,
+      left 0.85s cubic-bezier(0.25,0.46,0.45,0.94),
+      top  0.85s cubic-bezier(0.25,0.46,0.45,0.94);
+    animation: bubbleIdle var(--idle-dur, 5s) ease-in-out infinite alternate;
+  }
+  .bubble.settled:hover {
+    transform: scale(0.78);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.7),
+      0 0 35px rgba(160,220,255,0.38),
+      0 0 80px rgba(180,160,255,0.18);
+  }
+  .bubble.expanded {
+    transform: scale(1.08) !important;
+    z-index: 20;
+    pointer-events: all;
+    cursor: pointer;
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.8),
+      0 0 50px rgba(160,220,255,0.5),
+      0 0 100px rgba(180,160,255,0.28);
+    animation: none !important;
+  }
+  @keyframes bubbleIdle {
+    0%   { transform: scale(0.68) translateY(0px) translateX(-2px); }
+    100% { transform: scale(0.68) translateY(-7px) translateX(2px); }
+  }
+
+  .swish {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    border: 1px solid rgba(200,240,255,0.12);
+    z-index: 7;
+    animation: swishOut 0.65s ease-out forwards;
+  }
+  @keyframes swishOut {
+    0%   { transform: scale(0.2); opacity: 0.45; }
+    100% { transform: scale(1);   opacity: 0; }
+  }
+
+  #ui {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 10;
+    display: flex; flex-direction: column; align-items: center;
+    padding-bottom: 44px; gap: 10px;
+  }
+
+  #title-block { text-align: center; margin-bottom: 4px; }
+  #title-block h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300; font-size: 26px;
+    letter-spacing: 0.18em; color: rgba(255,255,255,0.88);
+    text-transform: lowercase;
+  }
+  #title-block p {
+    font-family: 'Jost', sans-serif;
+    font-weight: 200; font-size: 12.5px;
+    letter-spacing: 0.12em; color: rgba(200,230,240,0.58);
+    margin-top: 4px; text-transform: lowercase;
+  }
+
+  #input-row {
+    display: flex; align-items: stretch;
+    width: min(480px, 88vw);
+    border-radius: 40px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(2,18,30,0.55);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 0 28px rgba(13,122,138,0.16), inset 0 1px 0 rgba(255,255,255,0.09);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  #input-row:focus-within {
+    border-color: rgba(79,216,232,0.36);
+    box-shadow: 0 0 38px rgba(79,216,232,0.11), inset 0 1px 0 rgba(255,255,255,0.13);
+  }
+
+  #song-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: rgba(255,255,255,0.9);
+    font-family: 'Jost', sans-serif; font-weight: 300;
+    font-size: 14px; letter-spacing: 0.06em;
+    padding: 14px 20px; caret-color: #4fd8e8;
+  }
+  #song-input::placeholder { color: rgba(160,210,225,0.3); font-style: italic; }
+
+  #send-btn {
+    background: transparent; border: none;
+    border-left: 1px solid rgba(255,255,255,0.09);
+    color: rgba(160,210,225,0.62);
+    padding: 0 18px; cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #send-btn:hover { color: rgba(79,216,232,0.95); background: rgba(79,216,232,0.05); }
+  #send-btn:active { transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<div id="gate" style="position:fixed;inset:0;z-index:999;background:#020d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <p style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;letter-spacing:0.2em;color:rgba(255,255,255,0.85);">deep-dive</p>
+  <input id="gate-input" type="password" placeholder="password" autocomplete="off"
+    style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:40px;padding:12px 24px;color:rgba(255,255,255,0.85);font-family:'Jost',sans-serif;font-size:14px;letter-spacing:0.08em;outline:none;text-align:center;width:220px;" />
+  <p id="gate-error" style="font-family:'Jost',sans-serif;font-size:12px;color:rgba(255,100,100,0.7);letter-spacing:0.08em;opacity:0;transition:opacity 0.3s;">incorrect password</p>
+</div>
+<script>
+(function() {
+  const PASS = 'it is well';
+  const gate = document.getElementById('gate');
+  const inp  = document.getElementById('gate-input');
+  const err  = document.getElementById('gate-error');
+  if (sessionStorage.getItem('dd_auth') === '1') { gate.style.display = 'none'; return; }
+  inp.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    if (inp.value === PASS) {
+      sessionStorage.setItem('dd_auth', '1');
+      gate.style.transition = 'opacity 0.7s';
+      gate.style.opacity = '0';
+      setTimeout(() => gate.style.display = 'none', 700);
+    } else {
+      err.style.opacity = '1'; inp.value = '';
+      setTimeout(() => err.style.opacity = '0', 2000);
+    }
+  });
+  inp.focus();
+})();
+</script>
+
+<div id="ocean-bg"></div>
+<div id="water-shift"></div>
+<canvas id="rays-canvas"></canvas>
+<canvas id="haze-canvas"></canvas>
+<canvas id="part-canvas"></canvas>
+<canvas id="creat-canvas"></canvas>
+<div id="bubbles-container"></div>
+
+<div id="ui">
+  <div id="title-block">
+    <h1>deep-dive</h1>
+    <p>what song do you want to take a deep-dive into?</p>
+  </div>
+  <div id="input-row">
+    <input id="song-input" type="text" placeholder="a song i'd love to dive into…" maxlength="80" autocomplete="off" />
+    <button id="send-btn" title="Send">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 13V3M8 3L4 7M8 3L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+
+let mouseX = W()/2, mouseY = H()/2;
+let prevMX = mouseX, prevMY = mouseY;
+
+document.addEventListener('mousemove', e => {
+  const vx = e.clientX - mouseX, vy = e.clientY - mouseY;
+  mouseX = e.clientX; mouseY = e.clientY;
+  const speed = Math.sqrt(vx*vx + vy*vy);
+  if (speed > 7) {
+    const size = Math.min(55, speed * 1.4);
+    const el = document.createElement('div');
+    el.className = 'swish';
+    el.style.cssText = `left:${mouseX-size/2}px;top:${mouseY-size/2}px;width:${size}px;height:${size}px;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 660);
+  }
+  scatterBubbles();
+});
+
+// ══════════════════
+// GOD RAYS — soft & blended
+// ══════════════════
+const raysCanvas = document.getElementById('rays-canvas');
+const rCtx = raysCanvas.getContext('2d');
+let rays = [];
+
+function initRays() {
+  raysCanvas.width = W(); raysCanvas.height = H();
+  rays = [];
+  for (let i = 0; i < 6; i++) {
+    rays.push({
+      x: W() * (0.08 + i * 0.165 + (Math.random()-0.5)*0.08),
+      angle: (Math.random()-0.5) * 0.14,
+      width: 200 + Math.random() * 220,
+      opacity: 0.010 + Math.random() * 0.012,
+      speed: 0.00012 + Math.random() * 0.00018,
+      phase: (i/6)*Math.PI*2,
+    });
+  }
 }
 
-/* 🌊 LIGHT RAYS */
-.ocean-light {
-  position: absolute;
-  width: 200%;
-  height: 100%;
-  background: linear-gradient(
-    120deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.03) 40%,
-    rgba(255,255,255,0.07) 50%,
-    rgba(255,255,255,0.03) 60%,
-    rgba(255,255,255,0) 100%
-  );
-  animation: lightMove 18s linear infinite;
-  z-index: 1;
+function drawRays(t) {
+  rCtx.clearRect(0, 0, W(), H());
+  rays.forEach(r => {
+    const wobble  = Math.sin(t * r.speed + r.phase) * 0.02;
+    const breathe = 0.65 + 0.35 * Math.sin(t * r.speed * 0.6 + r.phase);
+    const len = H() * 1.6;
+    const w   = r.width * (0.88 + 0.12 * Math.sin(t * r.speed * 1.4 + r.phase));
+    rCtx.save();
+    rCtx.translate(r.x, -30);
+    rCtx.rotate(r.angle + wobble);
+    const grad = rCtx.createLinearGradient(0, 0, 0, len);
+    grad.addColorStop(0,    `rgba(210,242,250,${r.opacity * 2.8 * breathe})`);
+    grad.addColorStop(0.08, `rgba(160,228,242,${r.opacity * 2.2 * breathe})`);
+    grad.addColorStop(0.35, `rgba(90,200,230,${r.opacity * 1.4 * breathe})`);
+    grad.addColorStop(0.7,  `rgba(60,170,215,${r.opacity * 0.6 * breathe})`);
+    grad.addColorStop(1,    `rgba(40,140,200,0)`);
+    rCtx.fillStyle = grad;
+    // Very wide trapezoid so adjacent rays blend
+    rCtx.beginPath();
+    rCtx.moveTo(-w*0.5, 0);
+    rCtx.lineTo( w*0.5, 0);
+    rCtx.lineTo( w*1.3, len);
+    rCtx.lineTo(-w*1.3, len);
+    rCtx.closePath();
+    rCtx.fill();
+    rCtx.restore();
+  });
+}
+
+// ════════
+// HAZE
+// ════════
+const hazeCanvas = document.getElementById('haze-canvas');
+const hCtx = hazeCanvas.getContext('2d');
+
+function initHaze() { hazeCanvas.width = W(); hazeCanvas.height = H(); }
+
+function drawHaze(t) {
+  hCtx.clearRect(0, 0, W(), H());
+  const b = 0.5 + 0.5 * Math.sin(t * 0.0004);
+  const g1 = hCtx.createRadialGradient(W()*0.28, 0, 0, W()*0.28, 0, W()*0.72);
+  g1.addColorStop(0, `rgba(79,216,232,${0.042*b})`);
+  g1.addColorStop(1, 'rgba(79,216,232,0)');
+  hCtx.fillStyle = g1; hCtx.fillRect(0,0,W(),H());
+  const g2 = hCtx.createRadialGradient(W()*0.76, H()*0.08, 0, W()*0.76, H()*0.08, W()*0.5);
+  g2.addColorStop(0, `rgba(120,160,255,${0.028*(1-b)})`);
+  g2.addColorStop(1, 'rgba(120,160,255,0)');
+  hCtx.fillStyle = g2; hCtx.fillRect(0,0,W(),H());
+}
+
+// ══════════════════
+// SPARKLE PARTICLES
+// ══════════════════
+const pCanvas = document.getElementById('part-canvas');
+const pCtx = pCanvas.getContext('2d');
+let particles = [];
+
+function initParticles() {
+  pCanvas.width = W(); pCanvas.height = H();
+  particles = [];
+  for (let i = 0; i < 105; i++) particles.push(makeParticle(true));
+}
+
+function makeParticle(rndY=false) {
+  const isSpark = Math.random() > 0.52;
+  return {
+    x: Math.random()*W(), y: rndY ? Math.random()*H() : H()+10,
+    size: isSpark ? 0.85+Math.random()*1.6 : 0.4+Math.random()*0.95,
+    speed: 0.065+Math.random()*0.21,
+    opacity: isSpark ? 0.42+Math.random()*0.48 : 0.09+Math.random()*0.18,
+    drift: (Math.random()-0.5)*0.14,
+    phase: Math.random()*Math.PI*2,
+    twinkle: 0.001+Math.random()*0.003,
+    hue: 175+Math.random()*95,
+    isSpark,
+  };
+}
+
+function drawParticles(t) {
+  pCtx.clearRect(0,0,W(),H());
+  particles.forEach((p,i) => {
+    const dx=p.x-mouseX, dy=p.y-mouseY, d=Math.sqrt(dx*dx+dy*dy);
+    if (d < 70 && d > 0) { p.x += dx/d*0.35; p.y += dy/d*0.35; }
+    p.y -= p.speed;
+    p.x += Math.sin(t*0.0003+p.phase)*p.drift;
+    if (p.y < -10) particles[i] = makeParticle(false);
+    const tw = 0.4+0.6*Math.sin(t*p.twinkle+p.phase);
+    if (p.isSpark) {
+      pCtx.save();
+      pCtx.globalAlpha = p.opacity*tw;
+      pCtx.translate(p.x,p.y);
+      pCtx.fillStyle = `hsla(${p.hue},92%,96%,1)`;
+      const r = p.size*(0.5+tw*0.5);
+      pCtx.fillRect(-r*2.1,-r*0.32,r*4.2,r*0.64);
+      pCtx.fillRect(-r*0.32,-r*2.1,r*0.64,r*4.2);
+      pCtx.restore();
+    } else {
+      pCtx.beginPath();
+      pCtx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      pCtx.fillStyle=`rgba(175,228,242,${p.opacity*(0.5+tw*0.5)})`;
+      pCtx.fill();
+    }
+  });
+}
+
+// ════════════════════════════
+// CREATURES
+// ════════════════════════════
+const cCanvas = document.getElementById('creat-canvas');
+const cCtx = cCanvas.getContext('2d');
+let creatures = [];
+
+function initCreatures() {
+  cCanvas.width = W(); cCanvas.height = H();
+  for (let i=0;i<9;i++) spawnFish(true);
+  for (let i=0;i<4;i++) spawnJellyfish(true);
+  setTimeout(()=>spawnDolphin(), 9000+Math.random()*13000);
+}
+
+// ── FISH ──
+function spawnFish(init=false) {
+  const dir = Math.random()>0.5?1:-1;
+  creatures.push({
+    type:'fish', dir,
+    x: dir===1?(init?Math.random()*W():-70):(init?Math.random()*W():W()+70),
+    y: H()*(0.12+Math.random()*0.7),
+    speed: 0.3+Math.random()*0.6,
+    size: 5+Math.random()*9,
+    opacity: 0.38+Math.random()*0.42,
+    wavePhase: Math.random()*Math.PI*2,
+    waveAmp: 9+Math.random()*17,
+    waveSpeed: 0.0007+Math.random()*0.001,
+    hue: 170+Math.random()*70,
+    reacting: 0,
+  });
+}
+
+function drawFish(f, t) {
+  const bobY = Math.sin(t*f.waveSpeed+f.wavePhase)*f.waveAmp;
+  const sh   = 0.5+0.5*Math.sin(t*0.0024+f.wavePhase);
+  const s    = f.size;
+  let scl = 1;
+  if (f.reacting>0) { scl=1+0.32*Math.sin((1-f.reacting/30)*Math.PI); f.reacting--; }
+  cCtx.save();
+  cCtx.translate(f.x, f.y+bobY);
+  if (f.dir===-1) cCtx.scale(-1,1);
+  cCtx.scale(scl,scl);
+  cCtx.globalAlpha = f.opacity;
+  const bg = cCtx.createLinearGradient(-s,-s*0.38,s,s*0.38);
+  bg.addColorStop(0,  `hsla(${f.hue-18+sh*28},75%,88%,0.92)`);
+  bg.addColorStop(0.4,`hsla(${f.hue+14},52%,95%,0.96)`);
+  bg.addColorStop(1,  `hsla(${f.hue+44-sh*18},62%,82%,0.82)`);
+  cCtx.beginPath(); cCtx.ellipse(0,0,s,s*0.37,0,0,Math.PI*2);
+  cCtx.fillStyle=bg; cCtx.fill();
+  cCtx.beginPath(); cCtx.ellipse(-s*0.1,-s*0.1,s*0.43,s*0.12,-0.3,0,Math.PI*2);
+  cCtx.fillStyle=`rgba(255,255,255,${0.16+sh*0.26})`; cCtx.fill();
+  cCtx.beginPath();
+  cCtx.moveTo(-s*0.82,0); cCtx.lineTo(-s*1.48,-s*0.38); cCtx.lineTo(-s*1.48,s*0.38);
+  cCtx.closePath();
+  cCtx.fillStyle=`hsla(${f.hue},52%,76%,0.66)`; cCtx.fill();
+  if (f.reacting>0) {
+    for (let i=0;i<4;i++) {
+      const a=(i/4)*Math.PI*2, r=s*1.7*(1-f.reacting/30);
+      cCtx.beginPath(); cCtx.arc(Math.cos(a)*r,Math.sin(a)*r,s*0.13,0,Math.PI*2);
+      cCtx.fillStyle=`rgba(255,255,255,${f.reacting/30*0.55})`; cCtx.fill();
+    }
+  }
+  cCtx.restore();
+}
+
+// ── JELLYFISH — cute, no inner circle ──
+function spawnJellyfish(init=false) {
+  const pals = [
+    {bell:'155,222,255,',glow:'95,202,255,',tent:'145,218,255,'},
+    {bell:'208,162,255,',glow:'182,132,255,',tent:'198,152,255,'},
+    {bell:'150,255,212,',glow:'96,238,192,',tent:'136,248,208,'},
+    {bell:'255,192,232,',glow:'255,162,212,',tent:'255,182,226,'},
+  ];
+  const p = pals[Math.floor(Math.random()*pals.length)];
+  creatures.push({
+    type:'jelly',
+    x: W()*(0.06+Math.random()*0.88),
+    y: init?Math.random()*H():H()+90,
+    size: 18+Math.random()*22,
+    speed: 0.09+Math.random()*0.15,
+    drift: (Math.random()-0.5)*0.2,
+    phase: Math.random()*Math.PI*2,
+    pulseSpeed: 0.0007+Math.random()*0.0007,
+    opacity: 0.72+Math.random()*0.22,
+    bell:p.bell, glow:p.glow, tent:p.tent,
+    reacting:0,
+  });
+}
+
+function drawJellyfish(j, t) {
+  const pulse = Math.sin(t*j.pulseSpeed+j.phase);
+  const s = j.size*(1+pulse*0.1);
+  let scl=1;
+  if (j.reacting>0){ scl=1+0.38*Math.sin((1-j.reacting/40)*Math.PI); j.reacting--; }
+  cCtx.save();
+  cCtx.translate(j.x,j.y);
+  cCtx.scale(scl,scl);
+  cCtx.globalAlpha = j.opacity;
+
+  // Outer aura
+  const aura=cCtx.createRadialGradient(0,0,s*0.2,0,0,s*3.0);
+  aura.addColorStop(0,`rgba(${j.glow}0.2)`);
+  aura.addColorStop(0.4,`rgba(${j.glow}0.09)`);
+  aura.addColorStop(1,`rgba(${j.glow}0)`);
+  cCtx.fillStyle=aura; cCtx.beginPath(); cCtx.arc(0,0,s*3,0,Math.PI*2); cCtx.fill();
+
+  // Inner warm core
+  const ig=cCtx.createRadialGradient(0,-s*0.14,0,0,0,s*1.15);
+  ig.addColorStop(0,`rgba(${j.glow}0.52)`);
+  ig.addColorStop(0.5,`rgba(${j.bell}0.26)`);
+  ig.addColorStop(1,`rgba(${j.bell}0)`);
+  cCtx.fillStyle=ig; cCtx.beginPath(); cCtx.arc(0,0,s*1.15,0,Math.PI*2); cCtx.fill();
+
+  // Bell dome — top half only, no bottom circle
+  cCtx.save();
+  cCtx.beginPath();
+  cCtx.ellipse(0,0,s,s*0.54,0,Math.PI,Math.PI*2);
+  const bg=cCtx.createRadialGradient(-s*0.24,-s*0.28,0,0,0,s);
+  bg.addColorStop(0,`rgba(${j.glow}0.88)`);
+  bg.addColorStop(0.4,`rgba(${j.bell}0.65)`);
+  bg.addColorStop(1,`rgba(${j.bell}0.3)`);
+  cCtx.fillStyle=bg; cCtx.fill();
+  cCtx.restore();
+
+  // Scalloped frilly bumps along bottom rim — cute!
+  const bumps=9;
+  for (let k=0;k<bumps;k++) {
+    const a=Math.PI+(k/(bumps-1))*Math.PI;
+    const bx=Math.cos(a)*s, by=Math.sin(a)*s*0.54;
+    cCtx.beginPath(); cCtx.arc(bx,by,s*0.12,0,Math.PI*2);
+    cCtx.fillStyle=`rgba(${j.glow}0.6)`; cCtx.fill();
+  }
+
+  // Highlight
+  cCtx.beginPath();
+  cCtx.ellipse(-s*0.22,-s*0.26,s*0.3,s*0.15,-0.4,0,Math.PI*2);
+  cCtx.fillStyle=`rgba(255,255,255,${0.32+pulse*0.12})`; cCtx.fill();
+
+  // Tentacles from rim
+  for (let k=0;k<10;k++) {
+    const frac=k/9-0.5;
+    const tx=frac*s*1.7;
+    const w1=Math.sin(t*0.001+k*0.62+j.phase)*11;
+    const w2=Math.sin(t*0.0007+k*0.44+j.phase)*7;
+    cCtx.beginPath();
+    cCtx.moveTo(tx,s*0.06);
+    cCtx.bezierCurveTo(tx+w1,s*0.52,tx+w2,s*1.0,tx+w1*0.42,s*1.72);
+    const alpha=Math.max(0,0.13+0.13*(1-Math.abs(frac)*1.6));
+    cCtx.strokeStyle=`rgba(${j.tent}${alpha})`;
+    cCtx.lineWidth=0.55+(1-Math.abs(frac))*0.52;
+    cCtx.stroke();
+  }
+
+  // Reaction sparkles
+  if (j.reacting>0) {
+    const prog=1-j.reacting/40;
+    for (let i=0;i<6;i++){
+      const a=(i/6)*Math.PI*2;
+      const r=s*2.4*prog;
+      cCtx.beginPath(); cCtx.arc(Math.cos(a)*r,Math.sin(a)*r,s*0.11,0,Math.PI*2);
+      cCtx.fillStyle=`rgba(${j.glow}${(1-prog)*0.65})`; cCtx.fill();
+    }
+  }
+  cCtx.restore();
+}
+
+// ── DOLPHIN ──
+function spawnDolphin() {
+  const dir=Math.random()>0.5?1:-1;
+  creatures.push({ type:'dolphin', dir,
+    x:dir===1?-135:W()+135, y:H()*(0.1+Math.random()*0.38),
+    speed:1.9+Math.random()*0.9, phase:0, opacity:0, done:false });
+}
+
+function drawDolphin(d,t) {
+  if (d.opacity<0.62) d.opacity=Math.min(0.62,d.opacity+0.011);
+  const bob=Math.sin(t*0.003+d.phase)*15;
+  const s=28;
+  cCtx.save();
+  cCtx.translate(d.x,d.y+bob);
+  if(d.dir===-1) cCtx.scale(-1,1);
+  cCtx.globalAlpha=d.opacity;
+  cCtx.beginPath(); cCtx.ellipse(0,0,s,s*0.33,0,0,Math.PI*2);
+  cCtx.fillStyle='rgba(85,165,200,0.7)'; cCtx.fill();
+  cCtx.beginPath(); cCtx.ellipse(s*1.1,0,s*0.33,s*0.13,0,0,Math.PI*2);
+  cCtx.fillStyle='rgba(85,165,200,0.6)'; cCtx.fill();
+  cCtx.beginPath(); cCtx.moveTo(0,-s*0.3); cCtx.lineTo(s*0.27,-s*0.66); cCtx.lineTo(s*0.47,-s*0.3); cCtx.closePath();
+  cCtx.fillStyle='rgba(60,142,182,0.6)'; cCtx.fill();
+  cCtx.beginPath(); cCtx.moveTo(-s,0); cCtx.lineTo(-s*1.48,-s*0.4); cCtx.lineTo(-s*1.48,s*0.4); cCtx.closePath();
+  cCtx.fillStyle='rgba(60,142,182,0.56)'; cCtx.fill();
+  cCtx.restore();
+}
+
+// ── CLICK DETECTION ──
+cCanvas.addEventListener('click', e => {
+  const rect=cCanvas.getBoundingClientRect();
+  const cx=e.clientX-rect.left, cy=e.clientY-rect.top;
+  creatures.forEach(c => {
+    if (c.type==='fish') {
+      const dx=cx-c.x, dy=cy-c.y;
+      if (Math.sqrt(dx*dx+dy*dy)<c.size*2.4) c.reacting=30;
+    }
+    if (c.type==='jelly') {
+      const dx=cx-c.x, dy=cy-c.y;
+      if (Math.sqrt(dx*dx+dy*dy)<c.size*2.2) c.reacting=40;
+    }
+  });
+});
+
+function updateCreatures(t) {
+  cCtx.clearRect(0,0,W(),H());
+  creatures=creatures.filter(c=>!c.done);
+  for (let i=creatures.length-1;i>=0;i--) {
+    const c=creatures[i];
+    if (c.type==='fish') {
+      c.x+=c.speed*c.dir; drawFish(c,t);
+      if ((c.dir===1&&c.x>W()+90)||(c.dir===-1&&c.x<-90)) {
+        creatures.splice(i,1);
+        setTimeout(()=>spawnFish(), 700+Math.random()*3200);
+      }
+    }
+    if (c.type==='jelly') {
+      c.y-=c.speed; c.x+=Math.sin(t*0.0008+c.phase)*c.drift;
+      drawJellyfish(c,t);
+      if (c.y<-115) { creatures.splice(i,1); setTimeout(()=>spawnJellyfish(),1400+Math.random()*3800); }
+    }
+    if (c.type==='dolphin') {
+      c.x+=c.speed*c.dir; c.phase+=0.05; drawDolphin(c,t);
+      if ((c.dir===1&&c.x>W()+165)||(c.dir===-1&&c.x<-165)) {
+        c.done=true;
+        setTimeout(()=>spawnDolphin(),22000+Math.random()*30000);
+      }
+    }
+  }
+}
+
+// ════════════════════════════════════
+// BUBBLE SYSTEM
+// ════════════════════════════════════
+const settledBubbles = [];
+let expandedBubble = null;
+
+function getBW(text) { return Math.min(192, 76+text.length*2.95); }
+
+function findClusterPos(w) {
+  if (settledBubbles.length===0) return { x:W()/2-w/2, y:H()*0.18 };
+  const cx=settledBubbles.reduce((s,b)=>s+b.x+b.w/2,0)/settledBubbles.length;
+  const cy=settledBubbles.reduce((s,b)=>s+b.y+b.w/2,0)/settledBubbles.length;
+  let best=null, bestScore=Infinity;
+  for (let i=0;i<45;i++) {
+    const angle=Math.random()*Math.PI*2;
+    const radius=(w*0.55)+Math.random()*w*1.1;
+    const tx=cx+Math.cos(angle)*radius;
+    const ty=cy+Math.sin(angle)*radius*0.62;
+    const x=Math.max(6,Math.min(W()-w-6,tx-w/2));
+    const y=Math.max(6,Math.min(H()*0.52,ty-w/2));
+    let ok=true;
+    for (const b of settledBubbles) {
+      const dx=(x+w/2)-(b.x+b.w/2), dy=(y+w/2)-(b.y+b.w/2);
+      if (Math.sqrt(dx*dx+dy*dy)<(w/2+b.w/2)*0.76) { ok=false; break; }
+    }
+    if (ok) {
+      const score=Math.abs(tx-cx)+Math.abs(ty-cy);
+      if (score<bestScore) { bestScore=score; best={x,y}; }
+    }
+  }
+  return best||{x:Math.max(6,Math.min(W()-w-6,cx-w/2+(Math.random()-0.5)*70)),y:Math.max(6,cy-w/2+(Math.random()-0.5)*35)};
+}
+
+function launchBubble(text) {
+  const container=document.getElementById('bubbles-container');
+  const w=getBW(text);
+  const el=document.createElement('div');
+  el.className='bubble';
+  el.style.width=w+'px'; el.style.minHeight=w+'px';
+  el.textContent=text;
+  const startX=W()*0.3+Math.random()*W()*0.4;
+  const startY=H()-148;
+  el.style.left=(startX-w/2)+'px'; el.style.top=startY+'px';
+  container.appendChild(el);
+
+  // Phase 1 — form (grow in place)
+  requestAnimationFrame(()=>{ el.classList.add('forming'); });
+
+  // Phase 2 — rise (smooth, no jump)
+  setTimeout(()=>{
+    el.classList.remove('forming');
+    const {x:dX,y:dY}=findClusterPos(w);
+    const totalDY=startY-dY;
+    const sway=(Math.random()-0.5)*52;
+    el.style.setProperty('--ry30', `-${totalDY*0.3}px`);
+    el.style.setProperty('--rx30', `${sway*0.45}px`);
+    el.style.setProperty('--ry60', `-${totalDY*0.6}px`);
+    el.style.setProperty('--rx60', `${sway}px`);
+    el.style.setProperty('--ry85', `-${totalDY*0.86}px`);
+    el.style.setProperty('--ry100',`-${totalDY}px`);
+    const dur=3000+Math.random()*1100;
+    el.style.setProperty('--rise-dur', dur+'ms');
+    el.classList.add('rising');
+
+    // Phase 3 — settle & shrink
+    setTimeout(()=>{
+      el.classList.remove('rising');
+      el.style.left=dX+'px'; el.style.top=dY+'px';
+      el.style.transform='';
+      el.style.setProperty('--idle-dur',(3.2+Math.random()*2.5)+'s');
+      el.classList.add('settled');
+      const rec={el,x:dX,y:dY,w,origX:dX,origY:dY};
+      settledBubbles.push(rec);
+      attachBubbleEvents(el,rec);
+    }, dur+40);
+  }, 870);
+}
+
+function attachBubbleEvents(el, rec) {
+  el.addEventListener('click', ()=>{
+    if (expandedBubble && expandedBubble!==rec) {
+      expandedBubble.el.classList.remove('expanded');
+      expandedBubble.el.classList.add('settled');
+      // restore others
+      settledBubbles.forEach(b=>{ if(b!==expandedBubble){ b.el.style.left=b.x+'px'; b.el.style.top=b.y+'px'; } });
+    }
+    if (expandedBubble===rec) {
+      el.classList.remove('expanded'); el.classList.add('settled');
+      expandedBubble=null;
+      settledBubbles.forEach(b=>{ b.el.style.left=b.x+'px'; b.el.style.top=b.y+'px'; });
+    } else {
+      el.classList.remove('settled'); el.classList.add('expanded');
+      expandedBubble=rec;
+      pushOthersAway(rec);
+    }
+  });
+}
+
+function pushOthersAway(rec) {
+  const cx=rec.x+rec.w/2, cy=rec.y+rec.w/2;
+  settledBubbles.forEach(b=>{
+    if (b===rec) return;
+    const dx=(b.x+b.w/2)-cx, dy=(b.y+b.w/2)-cy;
+    const dist=Math.sqrt(dx*dx+dy*dy)||1;
+    const push=Math.max(0,140-dist)*0.52;
+    b.el.style.left=Math.max(4,Math.min(W()-b.w-4, b.x+(dx/dist)*push))+'px';
+    b.el.style.top =Math.max(4,Math.min(H()-b.w-4, b.y+(dy/dist)*push))+'px';
+  });
+}
+
+function scatterBubbles() {
+  settledBubbles.forEach(b=>{
+    if (b===expandedBubble) return;
+    const cx=b.x+b.w/2, cy=b.y+b.w/2;
+    const dx=cx-mouseX, dy=cy-mouseY;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if (dist<115&&dist>0) {
+      const push=(115-dist)*0.16;
+      b.el.style.left=Math.max(4,Math.min(W()-b.w-4, b.x+(dx/dist)*push))+'px';
+      b.el.style.top =Math.max(4,Math.min(H()-b.w-4, b.y+(dy/dist)*push))+'px';
+    }
+  });
+}
+
+// ── SUBMIT ──
+function handleSubmit() {
+  const inp=document.getElementById('song-input');
+  const text=inp.value.trim();
+  if (!text) return;
+  launchBubble(text);
+  inp.value='';
+  saveToSheets(text);
+}
+
+document.getElementById('send-btn').addEventListener('click', handleSubmit);
+document.getElementById('song-input').addEventListener('keydown', e=>{
+  if (e.key==='Enter') handleSubmit();
+});
+
+// ── GOOGLE SHEETS ──
+const SHEETS_URL='https://script.google.com/macros/s/AKfycbwq0Uo3AFKdYVv9wYlJKVR0Z0lXSK5pJopiDfVJ-qWuqOr3JYGN2hf7zb_Cng2K9Eeg/exec';
+
+function saveToSheets(text) {
+  fetch(SHEETS_URL,{
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({song:text}),
+  }).catch(()=>{});
+}
+
+// ── RESIZE ──
+window.addEventListener('resize',()=>{ initRays(); initHaze(); initParticles(); cCanvas.width=W(); cCanvas.height=H(); });
+
+// ── LOOP ──
+initRays(); initHaze(); initParticles(); initCreatures();
+
+function loop(t) {
+  drawRays(t); drawHaze(t); drawParticles(t); updateCreatures(t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>  z-index: 1;
 }
 
 @keyframes lightMove {
