@@ -41,15 +41,15 @@
 
   #bubbles-container { position:fixed; inset:0; z-index:7; pointer-events:none; }
 
-  /* ── SWISH ── */
-  .swish {
-    position:fixed; border-radius:50%; pointer-events:none;
-    border:1px solid rgba(200,240,255,0.18); z-index:8;
-    animation:swishOut 0.7s ease-out forwards;
+  /* ── RIPPLE ── */
+  .ripple {
+    position:fixed; border-radius:50%; pointer-events:none; z-index:8;
+    border:1px solid rgba(180,230,255,0.22);
+    animation:rippleOut var(--rdur,1s) ease-out forwards;
   }
-  @keyframes swishOut {
-    0%  { transform:scale(0.15); opacity:0.5; }
-    100%{ transform:scale(1);    opacity:0; }
+  @keyframes rippleOut {
+    0%  { transform:scale(0); opacity:0.6; }
+    100%{ transform:scale(1); opacity:0; }
   }
 
   /* ── BUBBLE ── */
@@ -140,45 +140,6 @@
     letter-spacing:0.3em;
   }
 
-  /* ── TWO-STEP INPUT ── */
-  #artist-row {
-    display:none; align-items:stretch;
-    width:min(480px,88vw);
-    border-radius:40px; overflow:hidden;
-    border:1px solid rgba(255,255,255,0.16);
-    background:rgba(2,18,30,0.55);
-    backdrop-filter:blur(16px);
-    box-shadow:0 0 28px rgba(13,122,138,0.16),inset 0 1px 0 rgba(255,255,255,0.09);
-    transition:border-color 0.3s,box-shadow 0.3s;
-    animation:slideIn 0.4s cubic-bezier(0.34,1.3,0.64,1);
-  }
-  @keyframes slideIn {
-    0%  { opacity:0; transform:translateY(8px); }
-    100%{ opacity:1; transform:translateY(0); }
-  }
-  #artist-row:focus-within {
-    border-color:rgba(79,216,232,0.36);
-    box-shadow:0 0 38px rgba(79,216,232,0.11),inset 0 1px 0 rgba(255,255,255,0.13);
-  }
-  #artist-input {
-    flex:1; background:transparent; border:none; outline:none;
-    color:rgba(255,255,255,0.9);
-    font-family:'Jost',sans-serif; font-weight:300;
-    font-size:14px; letter-spacing:0.05em;
-    padding:14px 20px; caret-color:#4fd8e8;
-  }
-  #artist-input::placeholder { color:rgba(160,210,225,0.3); font-style:italic; }
-  #artist-send-btn {
-    background:transparent; border:none;
-    border-left:1px solid rgba(255,255,255,0.09);
-    color:rgba(160,210,225,0.62);
-    padding:0 18px; cursor:pointer;
-    transition:color 0.2s,background 0.2s;
-    display:flex; align-items:center; justify-content:center;
-  }
-  #artist-send-btn:hover { color:rgba(79,216,232,0.95); background:rgba(79,216,232,0.05); }
-  #artist-send-btn:active { transform:scale(0.95); }
-
   /* ── UI ── */
   #ui {
     position:fixed; bottom:0; left:0; right:0; z-index:10;
@@ -268,11 +229,8 @@
 <canvas id="creat-canvas"></canvas>
 <div id="bubbles-container"></div>
 
-<!-- LYRIC FLOAT -->
-<div id="lyric-float">
-  <div id="lyric-text"></div>
-  <div id="lyric-notes">♪ ♫ ♪</div>
-</div>
+<!-- LYRIC FLOAT (canvas-drawn, no DOM text) -->
+<canvas id="lyric-canvas" style="position:fixed;inset:0;z-index:9;pointer-events:none;"></canvas>
 
 <div id="ui">
   <div id="title-block">
@@ -286,36 +244,72 @@
       </svg>
     </button>
   </div>
-  <div id="artist-row">
-    <input id="artist-input" type="text" placeholder="who's the artist?" maxlength="60" autocomplete="off" />
-    <button id="artist-send-btn" title="Send">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M8 13V3M8 3L4 7M8 3L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-  </div>
 </div>
 
 <script>
 const W=()=>window.innerWidth;
 const H=()=>window.innerHeight;
 let mouseX=W()/2, mouseY=H()/2;
+let lastMX=mouseX, lastMY=mouseY;
 
-// ── MOUSE: swish + scatter ──
+// ── MOUSE: water rush effect — draws on a canvas, no DOM elements ──
+const rushCanvas=document.createElement('canvas');
+rushCanvas.style.cssText='position:fixed;inset:0;z-index:8;pointer-events:none;';
+document.body.appendChild(rushCanvas);
+const rushCtx=rushCanvas.getContext('2d');
+rushCanvas.width=window.innerWidth; rushCanvas.height=window.innerHeight;
+
+let rushTrail=[];
+const RUSH_MAX=38;
+
 document.addEventListener('mousemove',e=>{
   const vx=e.clientX-mouseX, vy=e.clientY-mouseY;
   mouseX=e.clientX; mouseY=e.clientY;
   const spd=Math.sqrt(vx*vx+vy*vy);
-  if(spd>6){
-    const sz=Math.min(60,spd*1.5);
-    const el=document.createElement('div');
-    el.className='swish';
-    el.style.cssText=`left:${mouseX-sz/2}px;top:${mouseY-sz/2}px;width:${sz}px;height:${sz}px;`;
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(),700);
+  if(spd>2){
+    const perp_x=-vy/spd, perp_y=vx/spd;
+    const spread=Math.min(spd*0.55,22);
+    // Add several particles fanned out perpendicular to motion
+    for(let k=0;k<3;k++){
+      const offset=(k-1)*spread*(0.5+Math.random()*0.5);
+      rushTrail.push({
+        x:mouseX+perp_x*offset,
+        y:mouseY+perp_y*offset,
+        vx:perp_x*spd*0.18*(Math.random()-0.5),
+        vy:perp_y*spd*0.18*(Math.random()-0.5),
+        life:1.0,
+        decay:0.025+Math.random()*0.02,
+        width:1.5+Math.random()*spread*0.4,
+        // each streak goes slightly in the direction of motion + outward fan
+        dx:vx/spd*spd*0.12+perp_x*offset*0.04,
+        dy:vy/spd*spd*0.12+perp_y*offset*0.04,
+      });
+    }
+    if(rushTrail.length>RUSH_MAX*3) rushTrail=rushTrail.slice(-RUSH_MAX*3);
   }
   scatterBubbles();
 });
+
+function drawRush(){
+  rushCanvas.width=W(); rushCanvas.height=H();
+  rushCtx.clearRect(0,0,W(),H());
+  rushTrail=rushTrail.filter(p=>p.life>0);
+  rushTrail.forEach(p=>{
+    p.x+=p.dx; p.y+=p.dy;
+    p.life-=p.decay;
+    if(p.life<=0)return;
+    rushCtx.save();
+    rushCtx.globalAlpha=p.life*0.18;
+    rushCtx.strokeStyle=`rgba(190,230,250,${p.life})`;
+    rushCtx.lineWidth=p.width*(p.life*0.7+0.3);
+    rushCtx.lineCap='round';
+    rushCtx.beginPath();
+    rushCtx.moveTo(p.x,p.y);
+    rushCtx.lineTo(p.x+p.dx*3,p.y+p.dy*3);
+    rushCtx.stroke();
+    rushCtx.restore();
+  });
+}
 
 // ══════════════════════════
 // GOD RAYS — soft & blended
@@ -875,87 +869,193 @@ function scatterBubbles(){
   });
 }
 
-// ── TWO-STEP SUBMIT + LYRIC FLOW ──
+// ── INPUT STATE MACHINE ──
 const myKeys=new Set();
+let inputStep='song'; // 'song' | 'artist'
 let pendingSong='';
+let isProcessing=false;
 
-// Step 1: user submits song title
-function handleSongSubmit(){
-  const inp=document.getElementById('song-input');
-  const text=inp.value.trim();
-  if(!text)return;
-  pendingSong=text;
-  inp.value='';
-  // Show artist input
-  const artistRow=document.getElementById('artist-row');
-  artistRow.style.display='flex';
-  setTimeout(()=>document.getElementById('artist-input').focus(),50);
-}
-document.getElementById('send-btn').addEventListener('click',handleSongSubmit);
-document.getElementById('song-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter')handleSongSubmit();
-});
+const songInput=document.getElementById('song-input');
+const sendBtn=document.getElementById('send-btn');
 
-// Step 2: user submits artist
-function handleArtistSubmit(){
-  const inp=document.getElementById('artist-input');
-  const artist=inp.value.trim();
-  if(!artist)return;
-  inp.value='';
-  document.getElementById('artist-row').style.display='none';
-  const song=pendingSong; pendingSong='';
-  const fullText=song+' — '+artist;
-  // Fetch lyric then launch
-  fetchLyricAndLaunch(song, artist, fullText);
+const PROFANITY=/\b(fuck|shit|ass|bitch|damn|crap|hell|bastard|dick|cock|pussy|whore|slut|nigger|nigga|faggot|fag|cunt|piss|bastard)\b/i;
+
+function normalize(str){
+  // lowercase, strip punctuation except apostrophes, collapse spaces
+  return str.toLowerCase().replace(/[^\w\s']/g,'').replace(/\s+/,' ').trim();
 }
-document.getElementById('artist-send-btn').addEventListener('click',handleArtistSubmit);
-document.getElementById('artist-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter')handleArtistSubmit();
-  if(e.key==='Escape'){
-    document.getElementById('artist-row').style.display='none';
-    pendingSong='';
+
+function expandArtist(raw){
+  const n=normalize(raw);
+  if(n==='elevation'||n==='elevation worship') return 'Elevation Worship';
+  if(n==='hillsong'||n==='hillsong worship') return 'Hillsong Worship';
+  if(n==='hillsong united') return 'Hillsong United';
+  if(n==='hillsong young and free'||n==='hillsong y&f') return 'Hillsong Young & Free';
+  if(n==='bethel'||n==='bethel worship'||n==='bethel music') return 'Bethel Music';
+  // Title-case as fallback
+  return raw.replace(/\b\w/g,ch=>ch.toUpperCase());
+}
+
+function handleSubmit(){
+  if(isProcessing)return;
+  const val=songInput.value.trim();
+  if(!val)return;
+
+  if(inputStep==='song'){
+    if(PROFANITY.test(val)){
+      songInput.value='';
+      songInput.placeholder="keep it clean! try another song ☁️";
+      setTimeout(()=>songInput.placeholder="a worship song I'd love to dive into…",2500);
+      return;
+    }
+    pendingSong=val;
+    // Animate input swap: fade out, change placeholder, fade in
+    songInput.style.transition='opacity 0.25s';
+    songInput.style.opacity='0';
+    setTimeout(()=>{
+      songInput.value='';
+      songInput.placeholder="who's the artist?";
+      songInput.style.opacity='1';
+      songInput.focus();
+      inputStep='artist';
+    },250);
+
+  } else if(inputStep==='artist'){
+    if(PROFANITY.test(val)){
+      songInput.value='';
+      return;
+    }
+    const artist=expandArtist(val);
+    const song=pendingSong;
+    songInput.style.transition='opacity 0.25s';
+    songInput.style.opacity='0';
+    setTimeout(()=>{
+      songInput.value='';
+      songInput.placeholder="loading…";
+      songInput.style.opacity='1';
+      inputStep='loading';
+    },250);
+    isProcessing=true;
+    const displayText=song+' — '+artist;
+    processSubmission(song, artist, displayText);
   }
-});
+}
 
-// Lyric fetch via Claude API
-async function fetchLyricAndLaunch(song, artist, fullText){
-  try {
+sendBtn.addEventListener('click',handleSubmit);
+songInput.addEventListener('keydown',e=>{ if(e.key==='Enter')handleSubmit(); });
+
+// ── NORMALIZE BAND NAMES FOR API ──
+async function processSubmission(song, artist, displayText){
+  // Launch bubble immediately
+  if(window.saveToFirebaseAndSheets) window.saveToFirebaseAndSheets(displayText);
+  else { launchBubble(displayText); saveToSheets(displayText); }
+
+  // Reset input
+  setTimeout(()=>{
+    songInput.style.transition='opacity 0.25s';
+    songInput.style.opacity='0';
+    setTimeout(()=>{
+      songInput.placeholder="a worship song I'd love to dive into…";
+      songInput.style.opacity='1';
+      songInput.value='';
+      inputStep='song';
+      isProcessing=false;
+    },250);
+  },400);
+
+  // Fetch lyric in background — show AFTER bubble has risen (~4s)
+  try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:80,
-        messages:[{role:'user',content:`Give me ONE short lyric line (max 10 words) from the worship song "${song}" by ${artist}. Reply with ONLY the lyric line itself, no quotes, no explanation, nothing else. If you don't know the song, reply with exactly: UNKNOWN`}]
+        max_tokens:60,
+        messages:[{role:'user',content:`You know worship music well. Give me ONE memorable lyric line (5-10 words) from "${song}" by ${artist}. Common abbreviations: Elevation=Elevation Worship, Bethel=Bethel Music, Hillsong=Hillsong Worship. Ignore capitalization and punctuation differences when identifying the song. Reply with ONLY the lyric itself, no quotes, no punctuation at ends, nothing else. If truly unknown reply: UNKNOWN`}]
       })
     });
     const data=await res.json();
     const lyric=data.content?.[0]?.text?.trim();
-    if(lyric && lyric!=='UNKNOWN' && lyric.length>0){
-      await showLyricFloat(lyric);
+    if(lyric&&lyric!=='UNKNOWN'&&lyric.length>3&&!PROFANITY.test(lyric)){
+      // Wait for bubble to finish rising (~4.2s) then show lyric
+      setTimeout(()=>animateLyricCanvas(lyric), 4200);
     }
-  } catch(e){ /* silent — just skip lyric */ }
-  // Always launch bubble after lyric (or immediately if skipped)
-  if(window.saveToFirebaseAndSheets) window.saveToFirebaseAndSheets(fullText);
-  else { launchBubble(fullText); saveToSheets(fullText); }
+  }catch(e){}
 }
 
-// Show lyric floating in ocean then fade
-function showLyricFloat(lyric){
-  return new Promise(resolve=>{
-    const el=document.getElementById('lyric-float');
-    document.getElementById('lyric-text').textContent=lyric;
-    el.style.opacity='0';
-    el.style.display='flex';
-    requestAnimationFrame(()=>{
-      el.style.transition='opacity 1s ease';
-      el.style.opacity='1';
-      setTimeout(()=>{
-        el.style.opacity='0';
-        setTimeout(()=>{ el.style.display='none'; resolve(); },1000);
-      },2800);
+// ── LYRIC CANVAS ANIMATION ──
+const lCanvas=document.getElementById('lyric-canvas');
+const lCtx=lCanvas.getContext('2d');
+let lyricAnim=null;
+
+function animateLyricCanvas(lyric){
+  lCanvas.width=W(); lCanvas.height=H();
+  const totalDur=7000;
+  const startT=performance.now();
+  // Lyric drifts slowly from left to right across mid-screen
+  const startX=-60;
+  const endX=W()+60;
+  const baseY=H()*0.42;
+  // Monochromatic note companions — spaced along the path
+  const noteGlyphs=['♩','♪','♫','♬'];
+  const notes=[];
+  for(let i=0;i<6;i++){
+    notes.push({
+      glyph:noteGlyphs[i%noteGlyphs.length],
+      offsetX:(Math.random()-0.5)*180,
+      offsetY:(Math.random()-0.5)*40,
+      size:7+Math.random()*5,
+      phase:Math.random()*Math.PI*2,
+      opacity:0.18+Math.random()*0.18,
     });
-  });
+  }
+
+  function frame(now){
+    const elapsed=now-startT;
+    const prog=Math.min(1,elapsed/totalDur);
+    // Slow fade in (0-18%), hold (18-78%), fade out (78-100%)
+    let alpha;
+    if(prog<0.18) alpha=prog/0.18;
+    else if(prog<0.78) alpha=1;
+    else alpha=1-(prog-0.78)/0.22;
+
+    lCtx.clearRect(0,0,W(),H());
+    if(prog>=1){ lCtx.clearRect(0,0,W(),H()); return; }
+
+    const t=elapsed;
+    // Text travels across — ease-in-out
+    const ease=prog<0.5?2*prog*prog:1-Math.pow(-2*prog+2,2)/2;
+    const tx=startX+(endX-startX)*ease;
+    // Gentle vertical wave as it travels
+    const ty=baseY+Math.sin(prog*Math.PI*2.2)*6+Math.sin(t*0.0009)*3;
+
+    lCtx.save();
+
+    // Draw notes first (behind text), all monochromatic white/grey
+    notes.forEach(n=>{
+      const nx=tx+n.offsetX;
+      const ny=ty+n.offsetY+Math.sin(t*0.0012+n.phase)*5;
+      lCtx.globalAlpha=alpha*n.opacity;
+      lCtx.fillStyle='rgba(220,230,240,1)';
+      lCtx.font=`${n.size}px serif`;
+      lCtx.textAlign='center';
+      lCtx.textBaseline='middle';
+      lCtx.fillText(n.glyph,nx,ny);
+    });
+
+    // Lyric text — small, quiet, italic
+    lCtx.globalAlpha=alpha*0.72;
+    lCtx.fillStyle='rgba(210,220,230,1)';
+    lCtx.font='italic 300 9px "Jost",sans-serif';
+    lCtx.textAlign='center';
+    lCtx.textBaseline='middle';
+    lCtx.fillText(lyric.toLowerCase(),tx,ty);
+
+    lCtx.restore();
+    lyricAnim=requestAnimationFrame(frame);
+  }
+  if(lyricAnim) cancelAnimationFrame(lyricAnim);
+  lyricAnim=requestAnimationFrame(frame);
 }
 
 // ── GOOGLE SHEETS ──
@@ -978,7 +1078,7 @@ window.addEventListener('resize',()=>{
 initRays(); initHaze(); initParticles(); initNotes(); initCreatures();
 
 function loop(t){
-  drawRays(t); drawHaze(t); drawParticles(t); drawNotes(t); updateCreatures(t);
+  drawRays(t); drawHaze(t); drawParticles(t); drawNotes(t); updateCreatures(t); drawRush();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
