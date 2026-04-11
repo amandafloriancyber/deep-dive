@@ -5,223 +5,254 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>deep-dive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
 
   body {
-    background: #021828;
-    height: 100vh; width: 100vw;
-    overflow: hidden;
-    font-family: 'Jost', sans-serif;
+    background:#021828;
+    height:100vh; width:100vw;
+    overflow:hidden;
+    font-family:'Jost',sans-serif;
   }
 
   #ocean-bg {
-    position: fixed; inset: 0; z-index: 0;
-    background: linear-gradient(to bottom,
-      #021828 0%, #032030 20%, #053545 45%,
-      #084060 70%, #0a5570 85%, #0d7a8a 100%);
+    position:fixed; inset:0; z-index:0;
+    background:linear-gradient(to bottom,
+      #021828 0%,#032030 20%,#053545 45%,
+      #084060 70%,#0a5570 85%,#0d7a8a 100%);
   }
-
   #water-shift {
-    position: fixed; inset: 0; z-index: 1;
-    background: radial-gradient(ellipse 80% 60% at 50% 120%, rgba(13,122,138,0.3) 0%, transparent 70%);
-    animation: waterBreath 9s ease-in-out infinite alternate;
+    position:fixed; inset:0; z-index:1;
+    background:radial-gradient(ellipse 80% 60% at 50% 120%,rgba(13,122,138,0.3) 0%,transparent 70%);
+    animation:waterBreath 9s ease-in-out infinite alternate;
   }
   @keyframes waterBreath {
-    0%   { transform: scaleX(1) translateY(0); opacity: 0.5; }
-    100% { transform: scaleX(1.08) translateY(-15px); opacity: 0.9; }
+    0%  { transform:scaleX(1) translateY(0); opacity:0.5; }
+    100%{ transform:scaleX(1.08) translateY(-15px); opacity:0.9; }
   }
 
-  canvas { position: fixed; inset: 0; pointer-events: none; }
-  #rays-canvas  { z-index: 2; }
-  #haze-canvas  { z-index: 3; }
-  #part-canvas  { z-index: 4; }
-  #creat-canvas { z-index: 5; pointer-events: all; cursor: default; }
+  canvas { position:fixed; inset:0; pointer-events:none; }
+  #rays-canvas  { z-index:2; }
+  #haze-canvas  { z-index:3; }
+  #part-canvas  { z-index:4; }
+  #notes-canvas { z-index:5; }
+  #creat-canvas { z-index:6; pointer-events:all; cursor:default; }
 
-  #bubbles-container {
-    position: fixed; inset: 0; z-index: 6; pointer-events: none;
+  #bubbles-container { position:fixed; inset:0; z-index:7; pointer-events:none; }
+
+  /* ── SWISH ── */
+  .swish {
+    position:fixed; border-radius:50%; pointer-events:none;
+    border:1px solid rgba(200,240,255,0.18); z-index:8;
+    animation:swishOut 0.7s ease-out forwards;
+  }
+  @keyframes swishOut {
+    0%  { transform:scale(0.15); opacity:0.5; }
+    100%{ transform:scale(1);    opacity:0; }
   }
 
+  /* ── BUBBLE ── */
   .bubble {
-    position: absolute;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    text-align: center;
-    padding: 12px 16px;
-    backdrop-filter: blur(10px);
-    background: radial-gradient(circle at 30% 28%,
+    position:absolute; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:12px 16px;
+    backdrop-filter:blur(10px);
+    background:radial-gradient(circle at 30% 28%,
       rgba(255,255,255,0.35),
       rgba(180,240,255,0.1) 55%,
       rgba(200,180,255,0.06));
-    border: 1px solid rgba(255,255,255,0.38);
+    border:1px solid rgba(255,255,255,0.38);
     box-shadow:
       inset 0 1.5px 0 rgba(255,255,255,0.65),
       inset 0 -1px 0 rgba(180,220,255,0.12),
       0 0 22px rgba(160,220,255,0.2),
       0 0 55px rgba(180,160,255,0.08);
-    color: rgba(255,255,255,0.92);
-    font-family: 'Jost', sans-serif;
-    font-weight: 300;
-    font-size: 12px;
-    letter-spacing: 0.05em;
-    line-height: 1.4;
-    pointer-events: none;
-    will-change: transform, opacity;
-    opacity: 0;
-  }
-
-  .bubble.forming {
-    animation: bubbleForm 0.85s cubic-bezier(0.34,1.5,0.64,1) forwards;
-  }
-  @keyframes bubbleForm {
-    0%   { transform: scale(0); opacity: 0; }
-    70%  { opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .bubble.rising {
-    animation: bubbleRise var(--rise-dur) cubic-bezier(0.45,0,0.3,1) forwards;
-    opacity: 1;
-  }
-  @keyframes bubbleRise {
-    0%   { transform: translateY(0px)            translateX(0px)             scale(1); }
-    30%  { transform: translateY(var(--ry30))    translateX(var(--rx30))     scale(1); }
-    60%  { transform: translateY(var(--ry60))    translateX(var(--rx60))     scale(1); }
-    85%  { transform: translateY(var(--ry85))    translateX(var(--rx30))     scale(1); }
-    100% { transform: translateY(var(--ry100))   translateX(0px)             scale(1); }
+    color:rgba(255,255,255,0.92);
+    font-family:'Jost',sans-serif; font-weight:300;
+    font-size:12px; letter-spacing:0.05em; line-height:1.4;
+    pointer-events:none;
+    opacity:0; transform:scale(0);
+    transition:box-shadow 0.3s;
+    user-select:none; -webkit-user-select:none;
+    cursor:default;
   }
 
   .bubble.settled {
-    pointer-events: all;
-    cursor: pointer;
-    opacity: 1;
-    transform: scale(0.68);
+    pointer-events:all;
+    opacity:1;
+    animation:bubbleIdle var(--idle-dur,5s) ease-in-out infinite alternate;
     transition:
-      transform 0.55s cubic-bezier(0.34,1.2,0.64,1),
+      transform 0.5s cubic-bezier(0.34,1.3,0.64,1),
       box-shadow 0.3s,
       left 0.85s cubic-bezier(0.25,0.46,0.45,0.94),
       top  0.85s cubic-bezier(0.25,0.46,0.45,0.94);
-    animation: bubbleIdle var(--idle-dur, 5s) ease-in-out infinite alternate;
-  }
-  .bubble.settled:hover {
-    transform: scale(0.78);
-    box-shadow:
-      inset 0 1.5px 0 rgba(255,255,255,0.7),
-      0 0 35px rgba(160,220,255,0.38),
-      0 0 80px rgba(180,160,255,0.18);
-  }
-  .bubble.expanded {
-    transform: scale(1.08) !important;
-    z-index: 20;
-    pointer-events: all;
-    cursor: pointer;
-    box-shadow:
-      inset 0 1.5px 0 rgba(255,255,255,0.8),
-      0 0 50px rgba(160,220,255,0.5),
-      0 0 100px rgba(180,160,255,0.28);
-    animation: none !important;
   }
   @keyframes bubbleIdle {
-    0%   { transform: scale(0.68) translateY(0px) translateX(-2px); }
-    100% { transform: scale(0.68) translateY(-7px) translateX(2px); }
+    0%  { transform:scale(var(--bubble-scale,0.68)) translateY(0px) translateX(-2px); }
+    100%{ transform:scale(var(--bubble-scale,0.68)) translateY(-7px) translateX(2px); }
+  }
+  /* hover: lift up so text is readable */
+  .bubble.settled:hover {
+    transform:scale(0.85) translateY(-22px) !important;
+    animation:none !important;
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.75),
+      0 0 42px rgba(160,220,255,0.55),
+      0 0 95px rgba(180,160,255,0.28);
+    z-index:15;
+  }
+  .bubble.expanded {
+    pointer-events:all;
+    opacity:1;
+    transform:scale(1.08) !important;
+    z-index:20; animation:none !important;
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,255,255,0.8),
+      0 0 50px rgba(160,220,255,0.55),
+      0 0 110px rgba(180,160,255,0.3);
+    transition:
+      transform 0.45s cubic-bezier(0.34,1.3,0.64,1),
+      box-shadow 0.3s,
+      left 0.85s cubic-bezier(0.25,0.46,0.45,0.94),
+      top  0.85s cubic-bezier(0.25,0.46,0.45,0.94);
   }
 
-  .swish {
-    position: fixed;
-    border-radius: 50%;
-    pointer-events: none;
-    border: 1px solid rgba(200,240,255,0.12);
-    z-index: 7;
-    animation: swishOut 0.65s ease-out forwards;
+  /* ── LYRIC FLOAT ── */
+  #lyric-float {
+    position:fixed; left:0; right:0; z-index:9;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:none; top:38%;
+    opacity:0; transition:opacity 0.8s ease;
   }
-  @keyframes swishOut {
-    0%   { transform: scale(0.2); opacity: 0.45; }
-    100% { transform: scale(1);   opacity: 0; }
+  #lyric-text {
+    font-family:'Jost',sans-serif; font-weight:200;
+    font-size:15px; letter-spacing:0.14em;
+    color:rgba(255,255,255,0.88);
+    text-align:center; max-width:340px;
+    text-shadow:0 0 18px rgba(160,220,255,0.8), 0 0 40px rgba(180,160,255,0.5);
+    font-style:italic;
+    user-select:none;
+  }
+  #lyric-notes {
+    margin-top:10px; font-size:16px;
+    color:rgba(160,220,255,0.55);
+    letter-spacing:0.3em;
   }
 
+  /* ── TWO-STEP INPUT ── */
+  #artist-row {
+    display:none; align-items:stretch;
+    width:min(480px,88vw);
+    border-radius:40px; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.16);
+    background:rgba(2,18,30,0.55);
+    backdrop-filter:blur(16px);
+    box-shadow:0 0 28px rgba(13,122,138,0.16),inset 0 1px 0 rgba(255,255,255,0.09);
+    transition:border-color 0.3s,box-shadow 0.3s;
+    animation:slideIn 0.4s cubic-bezier(0.34,1.3,0.64,1);
+  }
+  @keyframes slideIn {
+    0%  { opacity:0; transform:translateY(8px); }
+    100%{ opacity:1; transform:translateY(0); }
+  }
+  #artist-row:focus-within {
+    border-color:rgba(79,216,232,0.36);
+    box-shadow:0 0 38px rgba(79,216,232,0.11),inset 0 1px 0 rgba(255,255,255,0.13);
+  }
+  #artist-input {
+    flex:1; background:transparent; border:none; outline:none;
+    color:rgba(255,255,255,0.9);
+    font-family:'Jost',sans-serif; font-weight:300;
+    font-size:14px; letter-spacing:0.05em;
+    padding:14px 20px; caret-color:#4fd8e8;
+  }
+  #artist-input::placeholder { color:rgba(160,210,225,0.3); font-style:italic; }
+  #artist-send-btn {
+    background:transparent; border:none;
+    border-left:1px solid rgba(255,255,255,0.09);
+    color:rgba(160,210,225,0.62);
+    padding:0 18px; cursor:pointer;
+    transition:color 0.2s,background 0.2s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #artist-send-btn:hover { color:rgba(79,216,232,0.95); background:rgba(79,216,232,0.05); }
+  #artist-send-btn:active { transform:scale(0.95); }
+
+  /* ── UI ── */
   #ui {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    z-index: 10;
-    display: flex; flex-direction: column; align-items: center;
-    padding-bottom: 44px; gap: 10px;
+    position:fixed; bottom:0; left:0; right:0; z-index:10;
+    display:flex; flex-direction:column; align-items:center;
+    padding-bottom:44px; gap:10px;
   }
-
-  #title-block { text-align: center; margin-bottom: 4px; }
+  #title-block { text-align:center; margin-bottom:4px; }
   #title-block h1 {
-    font-family: 'Cormorant Garamond', serif;
-    font-weight: 300; font-size: 26px;
-    letter-spacing: 0.18em; color: rgba(255,255,255,0.88);
-    text-transform: lowercase;
+    font-family:'Outfit',sans-serif;
+    font-weight:200; font-size:24px;
+    letter-spacing:0.08em; color:rgba(255,255,255,0.88);
+    text-transform:lowercase;
   }
-  #title-block p {
-    font-family: 'Jost', sans-serif;
-    font-weight: 200; font-size: 12.5px;
-    letter-spacing: 0.12em; color: rgba(200,230,240,0.58);
-    margin-top: 4px; text-transform: lowercase;
-  }
-
   #input-row {
-    display: flex; align-items: stretch;
-    width: min(480px, 88vw);
-    border-radius: 40px; overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.16);
-    background: rgba(2,18,30,0.55);
-    backdrop-filter: blur(16px);
-    box-shadow: 0 0 28px rgba(13,122,138,0.16), inset 0 1px 0 rgba(255,255,255,0.09);
-    transition: border-color 0.3s, box-shadow 0.3s;
+    display:flex; align-items:stretch;
+    width:min(480px,88vw);
+    border-radius:40px; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.16);
+    background:rgba(2,18,30,0.55);
+    backdrop-filter:blur(16px);
+    box-shadow:0 0 28px rgba(13,122,138,0.16),inset 0 1px 0 rgba(255,255,255,0.09);
+    transition:border-color 0.3s,box-shadow 0.3s;
   }
   #input-row:focus-within {
-    border-color: rgba(79,216,232,0.36);
-    box-shadow: 0 0 38px rgba(79,216,232,0.11), inset 0 1px 0 rgba(255,255,255,0.13);
+    border-color:rgba(79,216,232,0.36);
+    box-shadow:0 0 38px rgba(79,216,232,0.11),inset 0 1px 0 rgba(255,255,255,0.13);
   }
-
   #song-input {
-    flex: 1; background: transparent; border: none; outline: none;
-    color: rgba(255,255,255,0.9);
-    font-family: 'Jost', sans-serif; font-weight: 300;
-    font-size: 14px; letter-spacing: 0.06em;
-    padding: 14px 20px; caret-color: #4fd8e8;
+    flex:1; background:transparent; border:none; outline:none;
+    color:rgba(255,255,255,0.9);
+    font-family:'Jost',sans-serif; font-weight:300;
+    font-size:14px; letter-spacing:0.05em;
+    padding:14px 20px; caret-color:#4fd8e8;
   }
-  #song-input::placeholder { color: rgba(160,210,225,0.3); font-style: italic; }
-
+  #song-input::placeholder { color:rgba(160,210,225,0.3); font-style:italic; }
   #send-btn {
-    background: transparent; border: none;
-    border-left: 1px solid rgba(255,255,255,0.09);
-    color: rgba(160,210,225,0.62);
-    padding: 0 18px; cursor: pointer;
-    transition: color 0.2s, background 0.2s;
-    display: flex; align-items: center; justify-content: center;
+    background:transparent; border:none;
+    border-left:1px solid rgba(255,255,255,0.09);
+    color:rgba(160,210,225,0.62);
+    padding:0 18px; cursor:pointer;
+    transition:color 0.2s,background 0.2s;
+    display:flex; align-items:center; justify-content:center;
   }
-  #send-btn:hover { color: rgba(79,216,232,0.95); background: rgba(79,216,232,0.05); }
-  #send-btn:active { transform: scale(0.95); }
+  #send-btn:hover { color:rgba(79,216,232,0.95); background:rgba(79,216,232,0.05); }
+  #send-btn:active { transform:scale(0.95); }
 </style>
 </head>
 <body>
 
-<div id="gate" style="position:fixed;inset:0;z-index:999;background:#020d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-  <p style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;letter-spacing:0.2em;color:rgba(255,255,255,0.85);">deep-dive</p>
+<!-- ── PASSWORD GATE ── -->
+<div id="gate" style="position:fixed;inset:0;z-index:999;background:#020d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0px;">
+  <div style="font-size:28px;color:rgba(255,255,255,0.88);margin-bottom:-8px;">♪</div>
+  <p style="font-family:'Outfit',sans-serif;font-weight:200;font-size:26px;letter-spacing:0.08em;color:rgba(255,255,255,0.85);text-transform:lowercase;">deep-dive</p>
   <input id="gate-input" type="password" placeholder="password" autocomplete="off"
-    style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:40px;padding:12px 24px;color:rgba(255,255,255,0.85);font-family:'Jost',sans-serif;font-size:14px;letter-spacing:0.08em;outline:none;text-align:center;width:220px;" />
+    style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:40px;padding:12px 24px;color:rgba(255,255,255,0.85);font-family:'Jost',sans-serif;font-size:14px;letter-spacing:0.08em;outline:none;text-align:center;width:220px;margin-top:6px;" />
   <p id="gate-error" style="font-family:'Jost',sans-serif;font-size:12px;color:rgba(255,100,100,0.7);letter-spacing:0.08em;opacity:0;transition:opacity 0.3s;">incorrect password</p>
 </div>
 <script>
-(function() {
-  const PASS = 'it is well';
-  const gate = document.getElementById('gate');
-  const inp  = document.getElementById('gate-input');
-  const err  = document.getElementById('gate-error');
-  if (sessionStorage.getItem('dd_auth') === '1') { gate.style.display = 'none'; return; }
-  inp.addEventListener('keydown', function(e) {
-    if (e.key !== 'Enter') return;
-    if (inp.value === PASS) {
-      sessionStorage.setItem('dd_auth', '1');
-      gate.style.transition = 'opacity 0.7s';
-      gate.style.opacity = '0';
-      setTimeout(() => gate.style.display = 'none', 700);
+(function(){
+  const PASS='itiswell';
+  const gate=document.getElementById('gate');
+  const inp=document.getElementById('gate-input');
+  const err=document.getElementById('gate-error');
+  if(sessionStorage.getItem('dd_auth')==='1'){gate.style.display='none';return;}
+  inp.addEventListener('keydown',function(e){
+    if(e.key!=='Enter')return;
+    if(inp.value===PASS){
+      sessionStorage.setItem('dd_auth','1');
+      gate.style.transition='opacity 0.7s';
+      gate.style.opacity='0';
+      setTimeout(()=>gate.style.display='none',700);
     } else {
-      err.style.opacity = '1'; inp.value = '';
-      setTimeout(() => err.style.opacity = '0', 2000);
+      err.style.opacity='1'; inp.value='';
+      setTimeout(()=>err.style.opacity='0',2000);
     }
   });
   inp.focus();
@@ -233,17 +264,31 @@
 <canvas id="rays-canvas"></canvas>
 <canvas id="haze-canvas"></canvas>
 <canvas id="part-canvas"></canvas>
+<canvas id="notes-canvas"></canvas>
 <canvas id="creat-canvas"></canvas>
 <div id="bubbles-container"></div>
+
+<!-- LYRIC FLOAT -->
+<div id="lyric-float">
+  <div id="lyric-text"></div>
+  <div id="lyric-notes">♪ ♫ ♪</div>
+</div>
 
 <div id="ui">
   <div id="title-block">
     <h1>deep-dive</h1>
-    <p>what song do you want to take a deep-dive into?</p>
   </div>
   <div id="input-row">
-    <input id="song-input" type="text" placeholder="a song i'd love to dive into…" maxlength="80" autocomplete="off" />
+    <input id="song-input" type="text" placeholder="a worship song I'd love to dive into…" maxlength="80" autocomplete="off" />
     <button id="send-btn" title="Send">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 13V3M8 3L4 7M8 3L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+  <div id="artist-row">
+    <input id="artist-input" type="text" placeholder="who's the artist?" maxlength="60" autocomplete="off" />
+    <button id="artist-send-btn" title="Send">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M8 13V3M8 3L4 7M8 3L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -252,198 +297,225 @@
 </div>
 
 <script>
-const W = () => window.innerWidth;
-const H = () => window.innerHeight;
+const W=()=>window.innerWidth;
+const H=()=>window.innerHeight;
+let mouseX=W()/2, mouseY=H()/2;
 
-let mouseX = W()/2, mouseY = H()/2;
-let prevMX = mouseX, prevMY = mouseY;
-
-document.addEventListener('mousemove', e => {
-  const vx = e.clientX - mouseX, vy = e.clientY - mouseY;
-  mouseX = e.clientX; mouseY = e.clientY;
-  const speed = Math.sqrt(vx*vx + vy*vy);
-  if (speed > 7) {
-    const size = Math.min(55, speed * 1.4);
-    const el = document.createElement('div');
-    el.className = 'swish';
-    el.style.cssText = `left:${mouseX-size/2}px;top:${mouseY-size/2}px;width:${size}px;height:${size}px;`;
+// ── MOUSE: swish + scatter ──
+document.addEventListener('mousemove',e=>{
+  const vx=e.clientX-mouseX, vy=e.clientY-mouseY;
+  mouseX=e.clientX; mouseY=e.clientY;
+  const spd=Math.sqrt(vx*vx+vy*vy);
+  if(spd>6){
+    const sz=Math.min(60,spd*1.5);
+    const el=document.createElement('div');
+    el.className='swish';
+    el.style.cssText=`left:${mouseX-sz/2}px;top:${mouseY-sz/2}px;width:${sz}px;height:${sz}px;`;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 660);
+    setTimeout(()=>el.remove(),700);
   }
   scatterBubbles();
 });
 
-// ══════════════════
+// ══════════════════════════
 // GOD RAYS — soft & blended
-// ══════════════════
-const raysCanvas = document.getElementById('rays-canvas');
-const rCtx = raysCanvas.getContext('2d');
-let rays = [];
-
-function initRays() {
-  raysCanvas.width = W(); raysCanvas.height = H();
-  rays = [];
-  for (let i = 0; i < 6; i++) {
-    rays.push({
-      x: W() * (0.08 + i * 0.165 + (Math.random()-0.5)*0.08),
-      angle: (Math.random()-0.5) * 0.14,
-      width: 200 + Math.random() * 220,
-      opacity: 0.010 + Math.random() * 0.012,
-      speed: 0.00012 + Math.random() * 0.00018,
-      phase: (i/6)*Math.PI*2,
-    });
-  }
+// ══════════════════════════
+const raysCanvas=document.getElementById('rays-canvas');
+const rCtx=raysCanvas.getContext('2d');
+let rays=[];
+function initRays(){
+  raysCanvas.width=W(); raysCanvas.height=H(); rays=[];
+  for(let i=0;i<6;i++) rays.push({
+    x:W()*(0.06+i*0.175+(Math.random()-0.5)*0.07),
+    angle:(Math.random()-0.5)*0.13,
+    width:190+Math.random()*230,
+    opacity:0.009+Math.random()*0.011,
+    speed:0.00011+Math.random()*0.00016,
+    phase:(i/6)*Math.PI*2,
+  });
 }
-
-function drawRays(t) {
-  rCtx.clearRect(0, 0, W(), H());
-  rays.forEach(r => {
-    const wobble  = Math.sin(t * r.speed + r.phase) * 0.02;
-    const breathe = 0.65 + 0.35 * Math.sin(t * r.speed * 0.6 + r.phase);
-    const len = H() * 1.6;
-    const w   = r.width * (0.88 + 0.12 * Math.sin(t * r.speed * 1.4 + r.phase));
-    rCtx.save();
-    rCtx.translate(r.x, -30);
-    rCtx.rotate(r.angle + wobble);
-    const grad = rCtx.createLinearGradient(0, 0, 0, len);
-    grad.addColorStop(0,    `rgba(210,242,250,${r.opacity * 2.8 * breathe})`);
-    grad.addColorStop(0.08, `rgba(160,228,242,${r.opacity * 2.2 * breathe})`);
-    grad.addColorStop(0.35, `rgba(90,200,230,${r.opacity * 1.4 * breathe})`);
-    grad.addColorStop(0.7,  `rgba(60,170,215,${r.opacity * 0.6 * breathe})`);
-    grad.addColorStop(1,    `rgba(40,140,200,0)`);
-    rCtx.fillStyle = grad;
-    // Very wide trapezoid so adjacent rays blend
+function drawRays(t){
+  rCtx.clearRect(0,0,W(),H());
+  rays.forEach(r=>{
+    const wob=Math.sin(t*r.speed+r.phase)*0.018;
+    const br=0.62+0.38*Math.sin(t*r.speed*0.55+r.phase);
+    const len=H()*1.6;
+    const w=r.width*(0.9+0.1*Math.sin(t*r.speed*1.3+r.phase));
+    rCtx.save(); rCtx.translate(r.x,-30); rCtx.rotate(r.angle+wob);
+    const g=rCtx.createLinearGradient(0,0,0,len);
+    g.addColorStop(0,   `rgba(215,244,252,${r.opacity*2.8*br})`);
+    g.addColorStop(0.1, `rgba(165,230,244,${r.opacity*2.1*br})`);
+    g.addColorStop(0.4, `rgba(90,202,232,${r.opacity*1.3*br})`);
+    g.addColorStop(0.75,`rgba(55,168,218,${r.opacity*0.55*br})`);
+    g.addColorStop(1,   `rgba(35,138,200,0)`);
+    rCtx.fillStyle=g;
     rCtx.beginPath();
-    rCtx.moveTo(-w*0.5, 0);
-    rCtx.lineTo( w*0.5, 0);
-    rCtx.lineTo( w*1.3, len);
-    rCtx.lineTo(-w*1.3, len);
-    rCtx.closePath();
-    rCtx.fill();
-    rCtx.restore();
+    rCtx.moveTo(-w*0.5,0); rCtx.lineTo(w*0.5,0);
+    rCtx.lineTo(w*1.35,len); rCtx.lineTo(-w*1.35,len);
+    rCtx.closePath(); rCtx.fill(); rCtx.restore();
   });
 }
 
 // ════════
 // HAZE
 // ════════
-const hazeCanvas = document.getElementById('haze-canvas');
-const hCtx = hazeCanvas.getContext('2d');
-
-function initHaze() { hazeCanvas.width = W(); hazeCanvas.height = H(); }
-
-function drawHaze(t) {
-  hCtx.clearRect(0, 0, W(), H());
-  const b = 0.5 + 0.5 * Math.sin(t * 0.0004);
-  const g1 = hCtx.createRadialGradient(W()*0.28, 0, 0, W()*0.28, 0, W()*0.72);
-  g1.addColorStop(0, `rgba(79,216,232,${0.042*b})`);
-  g1.addColorStop(1, 'rgba(79,216,232,0)');
-  hCtx.fillStyle = g1; hCtx.fillRect(0,0,W(),H());
-  const g2 = hCtx.createRadialGradient(W()*0.76, H()*0.08, 0, W()*0.76, H()*0.08, W()*0.5);
-  g2.addColorStop(0, `rgba(120,160,255,${0.028*(1-b)})`);
-  g2.addColorStop(1, 'rgba(120,160,255,0)');
-  hCtx.fillStyle = g2; hCtx.fillRect(0,0,W(),H());
+const hazeCanvas=document.getElementById('haze-canvas');
+const hCtx=hazeCanvas.getContext('2d');
+function initHaze(){ hazeCanvas.width=W(); hazeCanvas.height=H(); }
+function drawHaze(t){
+  hCtx.clearRect(0,0,W(),H());
+  const b=0.5+0.5*Math.sin(t*0.0004);
+  const g1=hCtx.createRadialGradient(W()*0.28,0,0,W()*0.28,0,W()*0.72);
+  g1.addColorStop(0,`rgba(79,216,232,${0.04*b})`); g1.addColorStop(1,'rgba(79,216,232,0)');
+  hCtx.fillStyle=g1; hCtx.fillRect(0,0,W(),H());
+  const g2=hCtx.createRadialGradient(W()*0.76,H()*0.08,0,W()*0.76,H()*0.08,W()*0.5);
+  g2.addColorStop(0,`rgba(120,160,255,${0.026*(1-b)})`); g2.addColorStop(1,'rgba(120,160,255,0)');
+  hCtx.fillStyle=g2; hCtx.fillRect(0,0,W(),H());
 }
 
 // ══════════════════
 // SPARKLE PARTICLES
 // ══════════════════
-const pCanvas = document.getElementById('part-canvas');
-const pCtx = pCanvas.getContext('2d');
-let particles = [];
-
-function initParticles() {
-  pCanvas.width = W(); pCanvas.height = H();
-  particles = [];
-  for (let i = 0; i < 105; i++) particles.push(makeParticle(true));
+const pCanvas=document.getElementById('part-canvas');
+const pCtx=pCanvas.getContext('2d');
+let particles=[];
+function initParticles(){
+  pCanvas.width=W(); pCanvas.height=H(); particles=[];
+  for(let i=0;i<105;i++) particles.push(makeParticle(true));
 }
-
-function makeParticle(rndY=false) {
-  const isSpark = Math.random() > 0.52;
+function makeParticle(rndY=false){
+  const isSpark=Math.random()>0.52;
   return {
-    x: Math.random()*W(), y: rndY ? Math.random()*H() : H()+10,
-    size: isSpark ? 0.85+Math.random()*1.6 : 0.4+Math.random()*0.95,
-    speed: 0.065+Math.random()*0.21,
-    opacity: isSpark ? 0.42+Math.random()*0.48 : 0.09+Math.random()*0.18,
-    drift: (Math.random()-0.5)*0.14,
-    phase: Math.random()*Math.PI*2,
-    twinkle: 0.001+Math.random()*0.003,
-    hue: 175+Math.random()*95,
-    isSpark,
+    x:Math.random()*W(), y:rndY?Math.random()*H():H()+10,
+    size:isSpark?0.85+Math.random()*1.6:0.4+Math.random()*0.95,
+    speed:0.065+Math.random()*0.21,
+    opacity:isSpark?0.4+Math.random()*0.48:0.08+Math.random()*0.18,
+    drift:(Math.random()-0.5)*0.14,
+    phase:Math.random()*Math.PI*2,
+    twinkle:0.001+Math.random()*0.003,
+    hue:175+Math.random()*95, isSpark,
   };
 }
-
-function drawParticles(t) {
+function drawParticles(t){
   pCtx.clearRect(0,0,W(),H());
-  particles.forEach((p,i) => {
-    const dx=p.x-mouseX, dy=p.y-mouseY, d=Math.sqrt(dx*dx+dy*dy);
-    if (d < 70 && d > 0) { p.x += dx/d*0.35; p.y += dy/d*0.35; }
-    p.y -= p.speed;
-    p.x += Math.sin(t*0.0003+p.phase)*p.drift;
-    if (p.y < -10) particles[i] = makeParticle(false);
-    const tw = 0.4+0.6*Math.sin(t*p.twinkle+p.phase);
-    if (p.isSpark) {
-      pCtx.save();
-      pCtx.globalAlpha = p.opacity*tw;
+  particles.forEach((p,i)=>{
+    const dx=p.x-mouseX,dy=p.y-mouseY,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<70&&d>0){p.x+=dx/d*0.3;p.y+=dy/d*0.3;}
+    p.y-=p.speed; p.x+=Math.sin(t*0.0003+p.phase)*p.drift;
+    if(p.y<-10) particles[i]=makeParticle(false);
+    const tw=0.4+0.6*Math.sin(t*p.twinkle+p.phase);
+    if(p.isSpark){
+      pCtx.save(); pCtx.globalAlpha=p.opacity*tw;
       pCtx.translate(p.x,p.y);
-      pCtx.fillStyle = `hsla(${p.hue},92%,96%,1)`;
-      const r = p.size*(0.5+tw*0.5);
+      pCtx.fillStyle=`hsla(${p.hue},92%,96%,1)`;
+      const r=p.size*(0.5+tw*0.5);
       pCtx.fillRect(-r*2.1,-r*0.32,r*4.2,r*0.64);
       pCtx.fillRect(-r*0.32,-r*2.1,r*0.64,r*4.2);
       pCtx.restore();
     } else {
-      pCtx.beginPath();
-      pCtx.arc(p.x,p.y,p.size,0,Math.PI*2);
-      pCtx.fillStyle=`rgba(175,228,242,${p.opacity*(0.5+tw*0.5)})`;
-      pCtx.fill();
+      pCtx.beginPath(); pCtx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      pCtx.fillStyle=`rgba(175,228,242,${p.opacity*(0.5+tw*0.5)})`; pCtx.fill();
     }
   });
 }
 
-// ════════════════════════════
-// CREATURES
-// ════════════════════════════
-const cCanvas = document.getElementById('creat-canvas');
-const cCtx = cCanvas.getContext('2d');
-let creatures = [];
+// ══════════════════════════════
+// FLOATING MUSIC NOTES & SYMBOLS
+// ══════════════════════════════
+const nCanvas=document.getElementById('notes-canvas');
+const nCtx=nCanvas.getContext('2d');
+let musicNotes=[];
 
-function initCreatures() {
-  cCanvas.width = W(); cCanvas.height = H();
-  for (let i=0;i<9;i++) spawnFish(true);
-  for (let i=0;i<4;i++) spawnJellyfish(true);
-  setTimeout(()=>spawnDolphin(), 9000+Math.random()*13000);
+const NOTE_GLYPHS=['♩','♪','♫','♬','𝄞','𝄢','♭','♯','𝄽'];
+
+function initNotes(){
+  nCanvas.width=W(); nCanvas.height=H(); musicNotes=[];
+  for(let i=0;i<14;i++) musicNotes.push(makeNote(true));
 }
-
-// ── FISH ──
-function spawnFish(init=false) {
-  const dir = Math.random()>0.5?1:-1;
-  creatures.push({
-    type:'fish', dir,
-    x: dir===1?(init?Math.random()*W():-70):(init?Math.random()*W():W()+70),
-    y: H()*(0.12+Math.random()*0.7),
-    speed: 0.3+Math.random()*0.6,
-    size: 5+Math.random()*9,
-    opacity: 0.38+Math.random()*0.42,
-    wavePhase: Math.random()*Math.PI*2,
-    waveAmp: 9+Math.random()*17,
-    waveSpeed: 0.0007+Math.random()*0.001,
-    hue: 170+Math.random()*70,
-    reacting: 0,
+function makeNote(rndY=false){
+  return {
+    glyph:NOTE_GLYPHS[Math.floor(Math.random()*NOTE_GLYPHS.length)],
+    x:Math.random()*W(),
+    y:rndY?Math.random()*H():H()+60,
+    size:12+Math.random()*22,
+    speed:0.04+Math.random()*0.14,
+    drift:(Math.random()-0.5)*0.22,
+    phase:Math.random()*Math.PI*2,
+    rotSpeed:(Math.random()-0.5)*0.0008,
+    rot:Math.random()*Math.PI*2,
+    opacity:0.12+Math.random()*0.3,
+    hue:175+Math.random()*120,
+    twinkle:0.0008+Math.random()*0.002,
+  };
+}
+function drawNotes(t){
+  nCtx.clearRect(0,0,W(),H());
+  musicNotes.forEach((n,i)=>{
+    n.y-=n.speed;
+    n.x+=Math.sin(t*0.0004+n.phase)*n.drift;
+    n.rot+=n.rotSpeed;
+    if(n.y<-60) musicNotes[i]=makeNote(false);
+    const tw=0.5+0.5*Math.sin(t*n.twinkle+n.phase);
+    const glow=`hsla(${n.hue},85%,80%,${n.opacity*tw})`;
+    nCtx.save();
+    nCtx.translate(n.x,n.y);
+    nCtx.rotate(n.rot);
+    // Outer glow
+    nCtx.shadowColor=`hsla(${n.hue},90%,80%,0.6)`;
+    nCtx.shadowBlur=10+8*tw;
+    nCtx.globalAlpha=n.opacity*tw;
+    nCtx.fillStyle=glow;
+    nCtx.font=`${n.size}px serif`;
+    nCtx.textAlign='center';
+    nCtx.textBaseline='middle';
+    nCtx.fillText(n.glyph,0,0);
+    nCtx.restore();
   });
 }
 
-function drawFish(f, t) {
-  const bobY = Math.sin(t*f.waveSpeed+f.wavePhase)*f.waveAmp;
-  const sh   = 0.5+0.5*Math.sin(t*0.0024+f.wavePhase);
-  const s    = f.size;
-  let scl = 1;
-  if (f.reacting>0) { scl=1+0.32*Math.sin((1-f.reacting/30)*Math.PI); f.reacting--; }
+// ═══════════════
+// CREATURES
+// ═══════════════
+const cCanvas=document.getElementById('creat-canvas');
+const cCtx=cCanvas.getContext('2d');
+let creatures=[];
+
+function initCreatures(){
+  cCanvas.width=W(); cCanvas.height=H();
+  for(let i=0;i<9;i++) spawnFish(true);
+  for(let i=0;i<4;i++) spawnJellyfish(true);
+  setTimeout(()=>spawnDolphin(),9000+Math.random()*13000);
+}
+
+// ── FISH ──
+function spawnFish(init=false){
+  const dir=Math.random()>0.5?1:-1;
+  creatures.push({
+    type:'fish', dir,
+    x:dir===1?(init?Math.random()*W():-70):(init?Math.random()*W():W()+70),
+    y:H()*(0.12+Math.random()*0.7),
+    speed:0.3+Math.random()*0.6,
+    size:5+Math.random()*9,
+    opacity:0.38+Math.random()*0.42,
+    wavePhase:Math.random()*Math.PI*2,
+    waveAmp:9+Math.random()*17,
+    waveSpeed:0.0007+Math.random()*0.001,
+    hue:170+Math.random()*70,
+    reacting:0,
+  });
+}
+function drawFish(f,t){
+  const bobY=Math.sin(t*f.waveSpeed+f.wavePhase)*f.waveAmp;
+  const sh=0.5+0.5*Math.sin(t*0.0024+f.wavePhase);
+  const s=f.size;
+  let scl=1;
+  if(f.reacting>0){scl=1+0.32*Math.sin((1-f.reacting/30)*Math.PI);f.reacting--;}
   cCtx.save();
-  cCtx.translate(f.x, f.y+bobY);
-  if (f.dir===-1) cCtx.scale(-1,1);
+  cCtx.translate(f.x,f.y+bobY);
+  if(f.dir===-1) cCtx.scale(-1,1);
   cCtx.scale(scl,scl);
-  cCtx.globalAlpha = f.opacity;
-  const bg = cCtx.createLinearGradient(-s,-s*0.38,s,s*0.38);
+  cCtx.globalAlpha=f.opacity;
+  const bg=cCtx.createLinearGradient(-s,-s*0.38,s,s*0.38);
   bg.addColorStop(0,  `hsla(${f.hue-18+sh*28},75%,88%,0.92)`);
   bg.addColorStop(0.4,`hsla(${f.hue+14},52%,95%,0.96)`);
   bg.addColorStop(1,  `hsla(${f.hue+44-sh*18},62%,82%,0.82)`);
@@ -453,11 +525,10 @@ function drawFish(f, t) {
   cCtx.fillStyle=`rgba(255,255,255,${0.16+sh*0.26})`; cCtx.fill();
   cCtx.beginPath();
   cCtx.moveTo(-s*0.82,0); cCtx.lineTo(-s*1.48,-s*0.38); cCtx.lineTo(-s*1.48,s*0.38);
-  cCtx.closePath();
-  cCtx.fillStyle=`hsla(${f.hue},52%,76%,0.66)`; cCtx.fill();
-  if (f.reacting>0) {
-    for (let i=0;i<4;i++) {
-      const a=(i/4)*Math.PI*2, r=s*1.7*(1-f.reacting/30);
+  cCtx.closePath(); cCtx.fillStyle=`hsla(${f.hue},52%,76%,0.66)`; cCtx.fill();
+  if(f.reacting>0){
+    for(let i=0;i<4;i++){
+      const a=(i/4)*Math.PI*2,r=s*1.7*(1-f.reacting/30);
       cCtx.beginPath(); cCtx.arc(Math.cos(a)*r,Math.sin(a)*r,s*0.13,0,Math.PI*2);
       cCtx.fillStyle=`rgba(255,255,255,${f.reacting/30*0.55})`; cCtx.fill();
     }
@@ -465,101 +536,106 @@ function drawFish(f, t) {
   cCtx.restore();
 }
 
-// ── JELLYFISH — cute, no inner circle ──
-function spawnJellyfish(init=false) {
-  const pals = [
+// ── JELLYFISH — soft dome, NOT a full ellipse ──
+function spawnJellyfish(init=false){
+  const pals=[
     {bell:'155,222,255,',glow:'95,202,255,',tent:'145,218,255,'},
     {bell:'208,162,255,',glow:'182,132,255,',tent:'198,152,255,'},
     {bell:'150,255,212,',glow:'96,238,192,',tent:'136,248,208,'},
     {bell:'255,192,232,',glow:'255,162,212,',tent:'255,182,226,'},
   ];
-  const p = pals[Math.floor(Math.random()*pals.length)];
+  const p=pals[Math.floor(Math.random()*pals.length)];
   creatures.push({
     type:'jelly',
-    x: W()*(0.06+Math.random()*0.88),
-    y: init?Math.random()*H():H()+90,
-    size: 18+Math.random()*22,
-    speed: 0.09+Math.random()*0.15,
-    drift: (Math.random()-0.5)*0.2,
-    phase: Math.random()*Math.PI*2,
-    pulseSpeed: 0.0007+Math.random()*0.0007,
-    opacity: 0.72+Math.random()*0.22,
-    bell:p.bell, glow:p.glow, tent:p.tent,
+    x:W()*(0.06+Math.random()*0.88),
+    y:init?Math.random()*H():H()+90,
+    size:18+Math.random()*22,
+    speed:0.09+Math.random()*0.15,
+    drift:(Math.random()-0.5)*0.2,
+    phase:Math.random()*Math.PI*2,
+    pulseSpeed:0.0007+Math.random()*0.0007,
+    opacity:0.72+Math.random()*0.22,
+    bell:p.bell,glow:p.glow,tent:p.tent,
     reacting:0,
   });
 }
-
-function drawJellyfish(j, t) {
-  const pulse = Math.sin(t*j.pulseSpeed+j.phase);
-  const s = j.size*(1+pulse*0.1);
+function drawJellyfish(j,t){
+  const pulse=Math.sin(t*j.pulseSpeed+j.phase);
+  const s=j.size*(1+pulse*0.09);
   let scl=1;
-  if (j.reacting>0){ scl=1+0.38*Math.sin((1-j.reacting/40)*Math.PI); j.reacting--; }
+  if(j.reacting>0){scl=1+0.36*Math.sin((1-j.reacting/40)*Math.PI);j.reacting--;}
   cCtx.save();
   cCtx.translate(j.x,j.y);
   cCtx.scale(scl,scl);
-  cCtx.globalAlpha = j.opacity;
+  cCtx.globalAlpha=j.opacity;
 
   // Outer aura
   const aura=cCtx.createRadialGradient(0,0,s*0.2,0,0,s*3.0);
-  aura.addColorStop(0,`rgba(${j.glow}0.2)`);
-  aura.addColorStop(0.4,`rgba(${j.glow}0.09)`);
+  aura.addColorStop(0,`rgba(${j.glow}0.18)`);
+  aura.addColorStop(0.4,`rgba(${j.glow}0.08)`);
   aura.addColorStop(1,`rgba(${j.glow}0)`);
   cCtx.fillStyle=aura; cCtx.beginPath(); cCtx.arc(0,0,s*3,0,Math.PI*2); cCtx.fill();
 
-  // Inner warm core
-  const ig=cCtx.createRadialGradient(0,-s*0.14,0,0,0,s*1.15);
-  ig.addColorStop(0,`rgba(${j.glow}0.52)`);
-  ig.addColorStop(0.5,`rgba(${j.bell}0.26)`);
+  // Inner core glow
+  const ig=cCtx.createRadialGradient(0,-s*0.12,0,0,0,s*1.1);
+  ig.addColorStop(0,`rgba(${j.glow}0.48)`);
+  ig.addColorStop(0.5,`rgba(${j.bell}0.24)`);
   ig.addColorStop(1,`rgba(${j.bell}0)`);
-  cCtx.fillStyle=ig; cCtx.beginPath(); cCtx.arc(0,0,s*1.15,0,Math.PI*2); cCtx.fill();
+  cCtx.fillStyle=ig; cCtx.beginPath(); cCtx.arc(0,0,s*1.1,0,Math.PI*2); cCtx.fill();
 
-  // Bell dome — top half only, no bottom circle
+  // Bell — DOME ONLY: clip to top half so it looks like a mushroom/dome not a pierogi
   cCtx.save();
   cCtx.beginPath();
-  cCtx.ellipse(0,0,s,s*0.54,0,Math.PI,Math.PI*2);
-  const bg=cCtx.createRadialGradient(-s*0.24,-s*0.28,0,0,0,s);
-  bg.addColorStop(0,`rgba(${j.glow}0.88)`);
-  bg.addColorStop(0.4,`rgba(${j.bell}0.65)`);
-  bg.addColorStop(1,`rgba(${j.bell}0.3)`);
+  // Clip region: only the upper half (y < 0)
+  cCtx.rect(-s*1.5,-s*1.2,s*3,s*1.2);
+  cCtx.clip();
+  // Draw a rounder, taller dome
+  const bg=cCtx.createRadialGradient(-s*0.2,-s*0.35,0,0,0,s*1.05);
+  bg.addColorStop(0,`rgba(${j.glow}0.9)`);
+  bg.addColorStop(0.35,`rgba(${j.bell}0.7)`);
+  bg.addColorStop(1,`rgba(${j.bell}0.2)`);
+  cCtx.beginPath();
+  cCtx.arc(0,0,s,0,Math.PI*2);
   cCtx.fillStyle=bg; cCtx.fill();
   cCtx.restore();
 
-  // Scalloped frilly bumps along bottom rim — cute!
-  const bumps=9;
-  for (let k=0;k<bumps;k++) {
-    const a=Math.PI+(k/(bumps-1))*Math.PI;
-    const bx=Math.cos(a)*s, by=Math.sin(a)*s*0.54;
-    cCtx.beginPath(); cCtx.arc(bx,by,s*0.12,0,Math.PI*2);
-    cCtx.fillStyle=`rgba(${j.glow}0.6)`; cCtx.fill();
+  // Frilly skirt along the dome bottom edge
+  const frills=10;
+  for(let k=0;k<frills;k++){
+    const a=Math.PI+(k/(frills-1))*Math.PI;
+    const fx=Math.cos(a)*s, fy=Math.sin(a)*s*0.08; // near the equator
+    // Small teardrop bumps
+    cCtx.beginPath();
+    cCtx.arc(fx,fy,s*0.1,0,Math.PI*2);
+    cCtx.fillStyle=`rgba(${j.glow}0.55)`; cCtx.fill();
   }
 
   // Highlight
   cCtx.beginPath();
-  cCtx.ellipse(-s*0.22,-s*0.26,s*0.3,s*0.15,-0.4,0,Math.PI*2);
-  cCtx.fillStyle=`rgba(255,255,255,${0.32+pulse*0.12})`; cCtx.fill();
+  cCtx.ellipse(-s*0.24,-s*0.38,s*0.28,s*0.14,-0.4,0,Math.PI*2);
+  cCtx.fillStyle=`rgba(255,255,255,${0.34+pulse*0.12})`; cCtx.fill();
 
-  // Tentacles from rim
-  for (let k=0;k<10;k++) {
+  // Tentacles from the equator
+  for(let k=0;k<10;k++){
     const frac=k/9-0.5;
-    const tx=frac*s*1.7;
-    const w1=Math.sin(t*0.001+k*0.62+j.phase)*11;
+    const tx=frac*s*1.65;
+    const w1=Math.sin(t*0.001+k*0.62+j.phase)*12;
     const w2=Math.sin(t*0.0007+k*0.44+j.phase)*7;
     cCtx.beginPath();
-    cCtx.moveTo(tx,s*0.06);
-    cCtx.bezierCurveTo(tx+w1,s*0.52,tx+w2,s*1.0,tx+w1*0.42,s*1.72);
-    const alpha=Math.max(0,0.13+0.13*(1-Math.abs(frac)*1.6));
+    cCtx.moveTo(tx,s*0.02);
+    cCtx.bezierCurveTo(tx+w1,s*0.55,tx+w2,s*1.05,tx+w1*0.4,s*1.8);
+    const alpha=Math.max(0,0.12+0.12*(1-Math.abs(frac)*1.6));
     cCtx.strokeStyle=`rgba(${j.tent}${alpha})`;
-    cCtx.lineWidth=0.55+(1-Math.abs(frac))*0.52;
+    cCtx.lineWidth=0.55+(1-Math.abs(frac))*0.5;
     cCtx.stroke();
   }
 
   // Reaction sparkles
-  if (j.reacting>0) {
+  if(j.reacting>0){
     const prog=1-j.reacting/40;
-    for (let i=0;i<6;i++){
-      const a=(i/6)*Math.PI*2;
-      const r=s*2.4*prog;
-      cCtx.beginPath(); cCtx.arc(Math.cos(a)*r,Math.sin(a)*r,s*0.11,0,Math.PI*2);
+    for(let i=0;i<6;i++){
+      const a=(i/6)*Math.PI*2, r=s*2.4*prog;
+      cCtx.beginPath(); cCtx.arc(Math.cos(a)*r,Math.sin(a)*r,s*0.1,0,Math.PI*2);
       cCtx.fillStyle=`rgba(${j.glow}${(1-prog)*0.65})`; cCtx.fill();
     }
   }
@@ -567,17 +643,16 @@ function drawJellyfish(j, t) {
 }
 
 // ── DOLPHIN ──
-function spawnDolphin() {
+function spawnDolphin(){
   const dir=Math.random()>0.5?1:-1;
-  creatures.push({ type:'dolphin', dir,
-    x:dir===1?-135:W()+135, y:H()*(0.1+Math.random()*0.38),
-    speed:1.9+Math.random()*0.9, phase:0, opacity:0, done:false });
+  creatures.push({type:'dolphin',dir,
+    x:dir===1?-135:W()+135,
+    y:H()*(0.1+Math.random()*0.38),
+    speed:1.9+Math.random()*0.9,phase:0,opacity:0,done:false});
 }
-
-function drawDolphin(d,t) {
-  if (d.opacity<0.62) d.opacity=Math.min(0.62,d.opacity+0.011);
-  const bob=Math.sin(t*0.003+d.phase)*15;
-  const s=28;
+function drawDolphin(d,t){
+  if(d.opacity<0.62) d.opacity=Math.min(0.62,d.opacity+0.011);
+  const bob=Math.sin(t*0.003+d.phase)*15, s=28;
   cCtx.save();
   cCtx.translate(d.x,d.y+bob);
   if(d.dir===-1) cCtx.scale(-1,1);
@@ -593,83 +668,77 @@ function drawDolphin(d,t) {
   cCtx.restore();
 }
 
-// ── CLICK DETECTION ──
-cCanvas.addEventListener('click', e => {
+// ── CLICK ON CREATURES ──
+cCanvas.addEventListener('click',e=>{
   const rect=cCanvas.getBoundingClientRect();
   const cx=e.clientX-rect.left, cy=e.clientY-rect.top;
-  creatures.forEach(c => {
-    if (c.type==='fish') {
-      const dx=cx-c.x, dy=cy-c.y;
-      if (Math.sqrt(dx*dx+dy*dy)<c.size*2.4) c.reacting=30;
-    }
-    if (c.type==='jelly') {
-      const dx=cx-c.x, dy=cy-c.y;
-      if (Math.sqrt(dx*dx+dy*dy)<c.size*2.2) c.reacting=40;
-    }
+  creatures.forEach(c=>{
+    if(c.type==='fish'){const dx=cx-c.x,dy=cy-c.y;if(Math.sqrt(dx*dx+dy*dy)<c.size*2.4)c.reacting=30;}
+    if(c.type==='jelly'){const dx=cx-c.x,dy=cy-c.y;if(Math.sqrt(dx*dx+dy*dy)<c.size*2.2)c.reacting=40;}
   });
 });
 
-function updateCreatures(t) {
+function updateCreatures(t){
   cCtx.clearRect(0,0,W(),H());
   creatures=creatures.filter(c=>!c.done);
-  for (let i=creatures.length-1;i>=0;i--) {
+  for(let i=creatures.length-1;i>=0;i--){
     const c=creatures[i];
-    if (c.type==='fish') {
+    if(c.type==='fish'){
       c.x+=c.speed*c.dir; drawFish(c,t);
-      if ((c.dir===1&&c.x>W()+90)||(c.dir===-1&&c.x<-90)) {
+      if((c.dir===1&&c.x>W()+90)||(c.dir===-1&&c.x<-90)){
         creatures.splice(i,1);
-        setTimeout(()=>spawnFish(), 700+Math.random()*3200);
+        setTimeout(()=>spawnFish(),700+Math.random()*3200);
       }
     }
-    if (c.type==='jelly') {
+    if(c.type==='jelly'){
       c.y-=c.speed; c.x+=Math.sin(t*0.0008+c.phase)*c.drift;
       drawJellyfish(c,t);
-      if (c.y<-115) { creatures.splice(i,1); setTimeout(()=>spawnJellyfish(),1400+Math.random()*3800); }
+      if(c.y<-115){creatures.splice(i,1);setTimeout(()=>spawnJellyfish(),1400+Math.random()*3800);}
     }
-    if (c.type==='dolphin') {
+    if(c.type==='dolphin'){
       c.x+=c.speed*c.dir; c.phase+=0.05; drawDolphin(c,t);
-      if ((c.dir===1&&c.x>W()+165)||(c.dir===-1&&c.x<-165)) {
-        c.done=true;
-        setTimeout(()=>spawnDolphin(),22000+Math.random()*30000);
+      if((c.dir===1&&c.x>W()+165)||(c.dir===-1&&c.x<-165)){
+        c.done=true; setTimeout(()=>spawnDolphin(),22000+Math.random()*30000);
       }
     }
   }
 }
 
-// ════════════════════════════════════
-// BUBBLE SYSTEM
-// ════════════════════════════════════
-const settledBubbles = [];
-let expandedBubble = null;
+// ════════════════════════════════════════════
+// BUBBLE SYSTEM — smooth float, cluster, expand
+// ════════════════════════════════════════════
+const settledBubbles=[];
+let expandedBubble=null;
 
-function getBW(text) { return Math.min(192, 76+text.length*2.95); }
+function getBW(text){ return Math.min(192,76+text.length*2.95); }
 
-function findClusterPos(w) {
-  if (settledBubbles.length===0) return { x:W()/2-w/2, y:H()*0.18 };
-  const cx=settledBubbles.reduce((s,b)=>s+b.x+b.w/2,0)/settledBubbles.length;
-  const cy=settledBubbles.reduce((s,b)=>s+b.y+b.w/2,0)/settledBubbles.length;
-  let best=null, bestScore=Infinity;
-  for (let i=0;i<45;i++) {
+function findClusterPos(w){
+  // Keep all bubbles in the upper-center zone
+  const zoneX=W()*0.5, zoneY=H()*0.28;
+  const spread=Math.min(W()*0.28, 180);
+  if(settledBubbles.length===0) return {x:zoneX-w/2, y:zoneY-w/2};
+  let best=null,bestScore=Infinity;
+  for(let i=0;i<60;i++){
     const angle=Math.random()*Math.PI*2;
-    const radius=(w*0.55)+Math.random()*w*1.1;
-    const tx=cx+Math.cos(angle)*radius;
-    const ty=cy+Math.sin(angle)*radius*0.62;
-    const x=Math.max(6,Math.min(W()-w-6,tx-w/2));
-    const y=Math.max(6,Math.min(H()*0.52,ty-w/2));
+    const radius=(w*0.5)+Math.random()*spread;
+    const tx=zoneX+Math.cos(angle)*radius;
+    const ty=zoneY+Math.sin(angle)*radius*0.7;
+    const x=Math.max(8,Math.min(W()-w-8,tx-w/2));
+    const y=Math.max(8,Math.min(H()*0.58,ty-w/2));
     let ok=true;
-    for (const b of settledBubbles) {
-      const dx=(x+w/2)-(b.x+b.w/2), dy=(y+w/2)-(b.y+b.w/2);
-      if (Math.sqrt(dx*dx+dy*dy)<(w/2+b.w/2)*0.76) { ok=false; break; }
+    for(const b of settledBubbles){
+      const dx=(x+w/2)-(b.x+b.w/2),dy=(y+w/2)-(b.y+b.w/2);
+      if(Math.sqrt(dx*dx+dy*dy)<(w/2+b.w/2)*0.78){ok=false;break;}
     }
-    if (ok) {
-      const score=Math.abs(tx-cx)+Math.abs(ty-cy);
-      if (score<bestScore) { bestScore=score; best={x,y}; }
+    if(ok){
+      const score=Math.abs(tx-zoneX)+Math.abs(ty-zoneY);
+      if(score<bestScore){bestScore=score;best={x,y};}
     }
   }
-  return best||{x:Math.max(6,Math.min(W()-w-6,cx-w/2+(Math.random()-0.5)*70)),y:Math.max(6,cy-w/2+(Math.random()-0.5)*35)};
+  return best||{x:Math.max(8,Math.min(W()-w-8,zoneX-w/2+(Math.random()-0.5)*60)),y:Math.max(8,zoneY-w/2+(Math.random()-0.5)*30)};
 }
 
-function launchBubble(text) {
+function launchBubble(text){
   const container=document.getElementById('bubbles-container');
   const w=getBW(text);
   const el=document.createElement('div');
@@ -678,383 +747,277 @@ function launchBubble(text) {
   el.textContent=text;
   const startX=W()*0.3+Math.random()*W()*0.4;
   const startY=H()-148;
-  el.style.left=(startX-w/2)+'px'; el.style.top=startY+'px';
+  el.style.left=(startX-w/2)+'px';
+  el.style.top=startY+'px';
   container.appendChild(el);
 
-  // Phase 1 — form (grow in place)
-  requestAnimationFrame(()=>{ el.classList.add('forming'); });
+  const {x:dX,y:dY}=findClusterPos(w);
+  const totalDY=startY-dY; // how far up it needs to travel
 
-  // Phase 2 — rise (smooth, no jump)
-  setTimeout(()=>{
-    el.classList.remove('forming');
-    const {x:dX,y:dY}=findClusterPos(w);
-    const totalDY=startY-dY;
-    const sway=(Math.random()-0.5)*52;
-    el.style.setProperty('--ry30', `-${totalDY*0.3}px`);
-    el.style.setProperty('--rx30', `${sway*0.45}px`);
-    el.style.setProperty('--ry60', `-${totalDY*0.6}px`);
-    el.style.setProperty('--rx60', `${sway}px`);
-    el.style.setProperty('--ry85', `-${totalDY*0.86}px`);
-    el.style.setProperty('--ry100',`-${totalDY}px`);
-    const dur=3000+Math.random()*1100;
-    el.style.setProperty('--rise-dur', dur+'ms');
-    el.classList.add('rising');
+  // Use JS animation for ultra-smooth rise — no CSS keyframes that can jump
+  const sway=(Math.random()-0.5)*50;
+  const dur=3800+Math.random()*1200;
+  let startTime=null;
 
-    // Phase 3 — settle & shrink
-    setTimeout(()=>{
-      el.classList.remove('rising');
-      el.style.left=dX+'px'; el.style.top=dY+'px';
+  // Phase 1: grow from nothing over 700ms
+  let growStart=null;
+  function growStep(ts){
+    if(!growStart) growStart=ts;
+    const prog=Math.min(1,(ts-growStart)/700);
+    // cubic ease-out
+    const ease=1-Math.pow(1-prog,3);
+    el.style.opacity=String(ease);
+    el.style.transform=`scale(${ease})`;
+    if(prog<1){ requestAnimationFrame(growStep); }
+    else {
+      el.style.transform='scale(1)';
+      el.style.opacity='1';
+      requestAnimationFrame(riseStep);
+    }
+  }
+
+  // Phase 2: float up smoothly via JS lerp
+  function riseStep(ts){
+    if(!startTime) startTime=ts;
+    const elapsed=ts-startTime;
+    const prog=Math.min(1,elapsed/dur);
+    // smooth ease-in-out
+    const ease=prog<0.5?2*prog*prog:1-Math.pow(-2*prog+2,2)/2;
+    const curX=sway*Math.sin(prog*Math.PI);  // gentle side sway arc
+    const curY=-totalDY*ease;
+    el.style.transform=`translateY(${curY}px) translateX(${curX}px) scale(1)`;
+    if(prog<1){ requestAnimationFrame(riseStep); }
+    else {
+      // Phase 3: snap to cluster position, shrink
+      el.style.transition='none';
       el.style.transform='';
+      el.style.left=dX+'px';
+      el.style.top=dY+'px';
+      // Force reflow then animate in settled state
+      el.getBoundingClientRect();
+      el.style.setProperty('--bubble-scale','0.68');
       el.style.setProperty('--idle-dur',(3.2+Math.random()*2.5)+'s');
       el.classList.add('settled');
       const rec={el,x:dX,y:dY,w,origX:dX,origY:dY};
       settledBubbles.push(rec);
       attachBubbleEvents(el,rec);
-    }, dur+40);
-  }, 870);
+    }
+  }
+
+  requestAnimationFrame(growStep);
 }
 
-function attachBubbleEvents(el, rec) {
-  el.addEventListener('click', ()=>{
-    if (expandedBubble && expandedBubble!==rec) {
-      expandedBubble.el.classList.remove('expanded');
-      expandedBubble.el.classList.add('settled');
-      // restore others
-      settledBubbles.forEach(b=>{ if(b!==expandedBubble){ b.el.style.left=b.x+'px'; b.el.style.top=b.y+'px'; } });
+function attachBubbleEvents(el,rec){
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(expandedBubble&&expandedBubble!==rec){
+      // collapse old
+      const old=expandedBubble;
+      old.el.classList.remove('expanded');
+      old.el.style.setProperty('--bubble-scale','0.68');
+      old.el.classList.add('settled');
+      // restore all positions
+      settledBubbles.forEach(b=>{ b.el.style.left=b.x+'px'; b.el.style.top=b.y+'px'; });
+      expandedBubble=null;
     }
-    if (expandedBubble===rec) {
-      el.classList.remove('expanded'); el.classList.add('settled');
+    if(expandedBubble===rec){
+      // collapse this one
+      el.classList.remove('expanded');
+      el.style.setProperty('--bubble-scale','0.68');
+      el.classList.add('settled');
       expandedBubble=null;
       settledBubbles.forEach(b=>{ b.el.style.left=b.x+'px'; b.el.style.top=b.y+'px'; });
     } else {
-      el.classList.remove('settled'); el.classList.add('expanded');
+      // expand
+      el.classList.remove('settled');
+      el.classList.add('expanded');
       expandedBubble=rec;
       pushOthersAway(rec);
     }
   });
 }
 
-function pushOthersAway(rec) {
+// Dismiss expanded bubble when clicking ocean background
+document.addEventListener('click',e=>{
+  if(!expandedBubble) return;
+  if(!expandedBubble.el.contains(e.target)){
+    expandedBubble.el.classList.remove('expanded');
+    expandedBubble.el.style.setProperty('--bubble-scale','0.68');
+    expandedBubble.el.classList.add('settled');
+    settledBubbles.forEach(b=>{ b.el.style.left=b.x+'px'; b.el.style.top=b.y+'px'; });
+    expandedBubble=null;
+  }
+});
+
+function pushOthersAway(rec){
   const cx=rec.x+rec.w/2, cy=rec.y+rec.w/2;
   settledBubbles.forEach(b=>{
-    if (b===rec) return;
+    if(b===rec)return;
     const dx=(b.x+b.w/2)-cx, dy=(b.y+b.w/2)-cy;
     const dist=Math.sqrt(dx*dx+dy*dy)||1;
-    const push=Math.max(0,140-dist)*0.52;
-    b.el.style.left=Math.max(4,Math.min(W()-b.w-4, b.x+(dx/dist)*push))+'px';
-    b.el.style.top =Math.max(4,Math.min(H()-b.w-4, b.y+(dy/dist)*push))+'px';
+    const push=Math.max(0,145-dist)*0.5;
+    b.el.style.left=Math.max(4,Math.min(W()-b.w-4,b.x+(dx/dist)*push))+'px';
+    b.el.style.top =Math.max(4,Math.min(H()-b.w-4,b.y+(dy/dist)*push))+'px';
   });
 }
 
-function scatterBubbles() {
+function scatterBubbles(){
   settledBubbles.forEach(b=>{
-    if (b===expandedBubble) return;
+    if(b===expandedBubble)return;
     const cx=b.x+b.w/2, cy=b.y+b.w/2;
     const dx=cx-mouseX, dy=cy-mouseY;
     const dist=Math.sqrt(dx*dx+dy*dy);
-    if (dist<115&&dist>0) {
-      const push=(115-dist)*0.16;
-      b.el.style.left=Math.max(4,Math.min(W()-b.w-4, b.x+(dx/dist)*push))+'px';
-      b.el.style.top =Math.max(4,Math.min(H()-b.w-4, b.y+(dy/dist)*push))+'px';
+    if(dist<120&&dist>0){
+      const push=(120-dist)*0.15;
+      b.el.style.left=Math.max(4,Math.min(W()-b.w-4,b.x+(dx/dist)*push))+'px';
+      b.el.style.top =Math.max(4,Math.min(H()-b.w-4,b.y+(dy/dist)*push))+'px';
     }
   });
 }
 
-// ── SUBMIT ──
-function handleSubmit() {
+// ── TWO-STEP SUBMIT + LYRIC FLOW ──
+const myKeys=new Set();
+let pendingSong='';
+
+// Step 1: user submits song title
+function handleSongSubmit(){
   const inp=document.getElementById('song-input');
   const text=inp.value.trim();
-  if (!text) return;
-  launchBubble(text);
+  if(!text)return;
+  pendingSong=text;
   inp.value='';
-  saveToSheets(text);
+  // Show artist input
+  const artistRow=document.getElementById('artist-row');
+  artistRow.style.display='flex';
+  setTimeout(()=>document.getElementById('artist-input').focus(),50);
+}
+document.getElementById('send-btn').addEventListener('click',handleSongSubmit);
+document.getElementById('song-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter')handleSongSubmit();
+});
+
+// Step 2: user submits artist
+function handleArtistSubmit(){
+  const inp=document.getElementById('artist-input');
+  const artist=inp.value.trim();
+  if(!artist)return;
+  inp.value='';
+  document.getElementById('artist-row').style.display='none';
+  const song=pendingSong; pendingSong='';
+  const fullText=song+' — '+artist;
+  // Fetch lyric then launch
+  fetchLyricAndLaunch(song, artist, fullText);
+}
+document.getElementById('artist-send-btn').addEventListener('click',handleArtistSubmit);
+document.getElementById('artist-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter')handleArtistSubmit();
+  if(e.key==='Escape'){
+    document.getElementById('artist-row').style.display='none';
+    pendingSong='';
+  }
+});
+
+// Lyric fetch via Claude API
+async function fetchLyricAndLaunch(song, artist, fullText){
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:80,
+        messages:[{role:'user',content:`Give me ONE short lyric line (max 10 words) from the worship song "${song}" by ${artist}. Reply with ONLY the lyric line itself, no quotes, no explanation, nothing else. If you don't know the song, reply with exactly: UNKNOWN`}]
+      })
+    });
+    const data=await res.json();
+    const lyric=data.content?.[0]?.text?.trim();
+    if(lyric && lyric!=='UNKNOWN' && lyric.length>0){
+      await showLyricFloat(lyric);
+    }
+  } catch(e){ /* silent — just skip lyric */ }
+  // Always launch bubble after lyric (or immediately if skipped)
+  if(window.saveToFirebaseAndSheets) window.saveToFirebaseAndSheets(fullText);
+  else { launchBubble(fullText); saveToSheets(fullText); }
 }
 
-document.getElementById('send-btn').addEventListener('click', handleSubmit);
-document.getElementById('song-input').addEventListener('keydown', e=>{
-  if (e.key==='Enter') handleSubmit();
-});
+// Show lyric floating in ocean then fade
+function showLyricFloat(lyric){
+  return new Promise(resolve=>{
+    const el=document.getElementById('lyric-float');
+    document.getElementById('lyric-text').textContent=lyric;
+    el.style.opacity='0';
+    el.style.display='flex';
+    requestAnimationFrame(()=>{
+      el.style.transition='opacity 1s ease';
+      el.style.opacity='1';
+      setTimeout(()=>{
+        el.style.opacity='0';
+        setTimeout(()=>{ el.style.display='none'; resolve(); },1000);
+      },2800);
+    });
+  });
+}
 
 // ── GOOGLE SHEETS ──
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbwq0Uo3AFKdYVv9wYlJKVR0Z0lXSK5pJopiDfVJ-qWuqOr3JYGN2hf7zb_Cng2K9Eeg/exec';
-
-function saveToSheets(text) {
+function saveToSheets(text){
   fetch(SHEETS_URL,{
-    method:'POST', mode:'no-cors',
+    method:'POST',mode:'no-cors',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({song:text}),
   }).catch(()=>{});
 }
 
 // ── RESIZE ──
-window.addEventListener('resize',()=>{ initRays(); initHaze(); initParticles(); cCanvas.width=W(); cCanvas.height=H(); });
+window.addEventListener('resize',()=>{
+  initRays();initHaze();initParticles();initNotes();
+  cCanvas.width=W();cCanvas.height=H();
+});
 
-// ── LOOP ──
-initRays(); initHaze(); initParticles(); initCreatures();
+// ── MAIN LOOP ──
+initRays(); initHaze(); initParticles(); initNotes(); initCreatures();
 
-function loop(t) {
-  drawRays(t); drawHaze(t); drawParticles(t); updateCreatures(t);
+function loop(t){
+  drawRays(t); drawHaze(t); drawParticles(t); drawNotes(t); updateCreatures(t);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 </script>
-</body>
-</html>  z-index: 1;
-}
 
-@keyframes lightMove {
-  0% { transform: translateX(-20%); }
-  100% { transform: translateX(20%); }
-}
+<!-- FIREBASE REALTIME -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js';
+import { getDatabase, ref, push, onChildAdded, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js';
 
-/* 🌫️ HAZE */
-.water-haze {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(
-    circle at 30% 40%,
-    rgba(255,255,255,0.06),
-    transparent 60%
-  );
-  animation: haze 18s ease-in-out infinite alternate;
-  z-index: 1;
-}
-
-@keyframes haze {
-  0% { transform: translateY(0px); }
-  100% { transform: translateY(-20px); }
-}
-
-/* UI LAYER */
-.container {
-  position: absolute;
-  top: 20px;
-  width: 100%;
-  text-align: center;
-  z-index: 20;
-}
-
-input {
-  padding: 10px;
-  width: 280px;
-  border-radius: 20px;
-  border: none;
-  outline: none;
-
-  background: rgba(255,255,255,0.15);
-  color: white;
-  backdrop-filter: blur(6px);
-}
-
-input::placeholder {
-  color: rgba(255,255,255,0.7);
-}
-
-button {
-  padding: 10px 14px;
-  border-radius: 20px;
-  border: none;
-  background: #00c2ff;
-  color: white;
-  cursor: pointer;
-  margin-left: 8px;
-}
-
-/* 🌊 OCEAN */
-.ocean {
-  position: absolute;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-  z-index: 10;
-}
-
-/* 🫧 BUBBLES */
-.bubble {
-  position: absolute;
-  max-width: 220px;
-  padding: 12px 14px;
-
-  background: rgba(255,255,255,0.22);
-  border: 1px solid rgba(255,255,255,0.4);
-  border-radius: 40px;
-
-  backdrop-filter: blur(8px);
-  color: white;
-
-  font-size: 13px;
-  text-align: center;
-
-  box-shadow: 0 0 25px rgba(120,220,255,0.2);
-
-  animation: rise 14s ease-in-out forwards;
-  z-index: 30;
-}
-
-@keyframes rise {
-  0% {
-    transform: translateY(100vh) scale(0.8);
-    opacity: 0;
-  }
-  15% { opacity: 1; }
-  50% { transform: translateY(40vh) translateX(20px); }
-  100% {
-    transform: translateY(-120px) translateX(-10px);
-    opacity: 0;
-  }
-}
-
-/* 🐟 fish */
-.fish {
-  position: absolute;
-  font-size: 18px;
-  opacity: 0.5;
-  animation: swim 18s linear infinite;
-}
-
-@keyframes swim {
-  0% { transform: translateX(-10vw); }
-  100% { transform: translateX(110vw); }
-}
-
-/* 🐬 dolphin */
-.dolphin {
-  position: absolute;
-  font-size: 24px;
-  opacity: 0.35;
-  animation: dolphin 22s linear infinite;
-}
-
-@keyframes dolphin {
-  0% { transform: translateX(-20vw); }
-  50% { transform: translateX(50vw) translateY(-40px); }
-  100% { transform: translateX(120vw); }
-}
-
-/* 🪼 jellyfish */
-.jelly {
-  position: absolute;
-  font-size: 22px;
-  opacity: 0.4;
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.4));
-  animation: floatJ 10s ease-in-out infinite;
-}
-
-@keyframes floatJ {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-30px); }
-}
-
-/* bottom text */
-.bottomText {
-  position: absolute;
-  bottom: 30px;
-  width: 100%;
-  text-align: center;
-  z-index: 20;
-}
-
-.bottomText .title {
-  font-size: 24px;
-  letter-spacing: 2px;
-}
-
-.bottomText .subtitle {
-  font-size: 13px;
-  opacity: 0.75;
-  margin-top: 6px;
-}
-</style>
-</head>
-
-<body>
-
-<!-- BACKGROUND LAYERS -->
-<div class="ocean-light"></div>
-<div class="water-haze"></div>
-
-<!-- INPUT -->
-<div class="container">
-  <form id="form">
-    <input id="input" placeholder="Drop a song for deep dive..." />
-    <button>Send 🫧</button>
-  </form>
-</div>
-
-<!-- OCEAN -->
-<div class="ocean" id="ocean"></div>
-
-<!-- BOTTOM TEXT -->
-<div class="bottomText">
-  <div class="title">deep-dive</div>
-  <div class="subtitle">what song do you want to take a deep-dive into?</div>
-</div>
-
-<script>
-const ocean = document.getElementById("ocean");
-const form = document.getElementById("form");
-const input = document.getElementById("input");
-
-/* 🔌 FIREBASE (optional plug-in later)
-const db = firebase.database();
-const tipsRef = db.ref("tips");
-*/
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const text = input.value.trim();
-  if (!text) return;
-
-  createBubble(text);
-
-  /* tipsRef.push({ text, time: Date.now() }); */
-
-  input.value = "";
+const app = initializeApp({
+  apiKey: 'AIzaSyCEIVIczljpfWUFWAK6RbQ6l2VoejO1kxU',
+  authDomain: 'deep-dive-7a683.firebaseapp.com',
+  databaseURL: 'https://deep-dive-7a683-default-rtdb.firebaseio.com',
+  projectId: 'deep-dive-7a683',
+  storageBucket: 'deep-dive-7a683.firebasestorage.app',
+  messagingSenderId: '884425366734',
+  appId: '1:884425366734:web:95684a9d9a4750722cc49f'
 });
 
-/* 🫧 bubbles */
-function createBubble(text) {
-  const b = document.createElement("div");
-  b.className = "bubble";
-  b.innerText = text;
+const db = getDatabase(app);
+const suggestionsRef = ref(db, 'suggestions');
 
-  b.style.left = Math.random() * 70 + "%";
-  b.style.animationDuration = (10 + Math.random() * 6) + "s";
+window.saveToFirebaseAndSheets = function(text) {
+  push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
+    .then(snap => { myKeys.add(snap.key); launchBubble(text); });
+  saveToSheets(text);
+};
 
-  ocean.appendChild(b);
-  setTimeout(() => b.remove(), 15000);
-}
-
-/* 🐟 fish */
-setInterval(() => {
-  const f = document.createElement("div");
-  f.className = "fish";
-  f.innerText = "🐟";
-  f.style.top = Math.random() * 80 + "%";
-  ocean.appendChild(f);
-}, 3000);
-
-/* 🐬 dolphins */
-setInterval(() => {
-  const d = document.createElement("div");
-  d.className = "dolphin";
-  d.innerText = "🐬";
-  d.style.top = Math.random() * 60 + "%";
-  ocean.appendChild(d);
-}, 8000);
-
-/* 🪼 jellyfish */
-setInterval(() => {
-  const j = document.createElement("div");
-  j.className = "jelly";
-  j.innerText = "🪼";
-  j.style.left = Math.random() * 90 + "%";
-  j.style.top = Math.random() * 80 + "%";
-  ocean.appendChild(j);
-}, 2500);
+// Listen for new submissions from others
+let initialLoadDone = false;
+onChildAdded(suggestionsRef, snap => {
+  if (!initialLoadDone) return; // skip pre-existing entries
+  if (myKeys.has(snap.key)) return; // skip our own
+  const song = snap.val()?.song;
+  if (song) setTimeout(() => launchBubble(song), Math.random() * 800);
+});
+setTimeout(() => { initialLoadDone = true; }, 1500);
 </script>
-
 </body>
 </html>
