@@ -1,120 +1,254 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Deep Dive Tips 🌊</title>
+<meta charset="UTF-8">
+<title>Deep Dive 🌊</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-      background: linear-gradient(#003366, #006994, #00aaff);
-      color: white;
-    }
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  color: white;
+  background: linear-gradient(-45deg, #001b2e, #004b6e, #007ea7, #00334d);
+  background-size: 400% 400%;
+  animation: oceanShift 12s ease infinite;
+}
 
-    .container {
-      position: absolute;
-      top: 20px;
-      width: 100%;
-      text-align: center;
-      z-index: 10;
-    }
+/* animated ocean background */
+@keyframes oceanShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 
-    input {
-      padding: 10px;
-      width: 250px;
-      border-radius: 20px;
-      border: none;
-      outline: none;
-    }
+/* top input */
+.container {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  text-align: center;
+  z-index: 20;
+}
 
-    button {
-      padding: 10px 15px;
-      border-radius: 20px;
-      border: none;
-      margin-left: 10px;
-      background: #00c2ff;
-      color: white;
-      cursor: pointer;
-    }
+input {
+  padding: 10px;
+  width: 280px;
+  border-radius: 20px;
+  border: none;
+  outline: none;
+}
 
-    .ocean {
-      position: relative;
-      width: 100%;
-      height: 100vh;
-    }
+button {
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: none;
+  background: #00c2ff;
+  cursor: pointer;
+  margin-left: 8px;
+}
 
-    .bubble {
-      position: absolute;
-      max-width: 200px;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      backdrop-filter: blur(5px);
-      text-align: center;
-      font-size: 14px;
-      animation: floatUp 12s linear infinite;
-    }
+/* ocean container */
+.ocean {
+  position: absolute;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
 
-    @keyframes floatUp {
-      0% {
-        transform: translateY(100vh) scale(0.8);
-        opacity: 0;
-      }
-      20% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-120px) scale(1);
-        opacity: 0;
-      }
-    }
-  </style>
+/* 🌊 bubbles (tips) */
+.bubble {
+  position: absolute;
+  max-width: 220px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 40px;
+  backdrop-filter: blur(6px);
+  font-size: 13px;
+  text-align: center;
+  animation: rise 14s ease-in-out forwards;
+  transition: transform 2s ease;
+}
+
+/* rising + swaying */
+@keyframes rise {
+  0% {
+    transform: translateY(100vh) scale(0.8);
+    opacity: 0;
+  }
+  15% { opacity: 1; }
+  50% { transform: translateY(40vh) translateX(20px); }
+  100% {
+    transform: translateY(-120px) translateX(-10px) scale(1);
+    opacity: 0;
+  }
+}
+
+/* 🐟 fish */
+.fish {
+  position: absolute;
+  font-size: 18px;
+  opacity: 0.5;
+  animation: swim 18s linear infinite;
+}
+
+@keyframes swim {
+  0% { transform: translateX(-10vw); }
+  100% { transform: translateX(110vw); }
+}
+
+/* 🐬 dolphins */
+.dolphin {
+  position: absolute;
+  font-size: 24px;
+  opacity: 0.35;
+  animation: dolphinSwim 22s linear infinite;
+}
+
+@keyframes dolphinSwim {
+  0% { transform: translateX(-20vw) translateY(0); }
+  50% { transform: translateX(50vw) translateY(-40px); }
+  100% { transform: translateX(120vw) translateY(0); }
+}
+
+/* 🪼 jellyfish */
+.jelly {
+  position: absolute;
+  font-size: 22px;
+  opacity: 0.4;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.4));
+  animation: floatJelly 10s ease-in-out infinite;
+}
+
+@keyframes floatJelly {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-30px); }
+}
+
+/* bottom text */
+.bottomText {
+  position: absolute;
+  bottom: 30px;
+  width: 100%;
+  text-align: center;
+  z-index: 30;
+}
+
+.bottomText .title {
+  font-size: 24px;
+  letter-spacing: 2px;
+  opacity: 0.9;
+}
+
+.bottomText .subtitle {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-top: 6px;
+}
+</style>
 </head>
 
 <body>
 
-  <div class="container">
-    <h2>🌊 Deep Dive Song Tips</h2>
-    <form id="form">
-      <input id="input" placeholder="Suggest a song..." />
-      <button type="submit">Send 🫧</button>
-    </form>
-  </div>
+<!-- INPUT -->
+<div class="container">
+  <form id="form">
+    <input id="input" placeholder="Drop a song for deep dive..." />
+    <button>Send 🫧</button>
+  </form>
+</div>
 
-  <div class="ocean" id="ocean"></div>
+<!-- OCEAN -->
+<div class="ocean" id="ocean"></div>
 
-  <script>
-    const form = document.getElementById("form");
-    const input = document.getElementById("input");
-    const ocean = document.getElementById("ocean");
+<!-- BOTTOM TEXT -->
+<div class="bottomText">
+  <div class="title">deep-dive</div>
+  <div class="subtitle">what song do you want to take a deep-dive into?</div>
+</div>
 
-    form.addEventListener("submit", function(e) {
-      e.preventDefault();
+<!-- AMBIENT SOUND -->
+<audio autoplay loop>
+  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_5c1b5b1f2c.mp3">
+</audio>
 
-      const text = input.value.trim();
-      if (!text) return;
+<script>
+const ocean = document.getElementById("ocean");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
 
-      createBubble(text);
-      input.value = "";
-    });
+/* =========================
+   FIREBASE HOOK (KEEP YOURS HERE)
+   ========================= */
+// const db = firebase.database();
+// const tipsRef = db.ref("tips");
 
-    function createBubble(text) {
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-      bubble.innerText = text;
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
 
-      bubble.style.left = Math.random() * 80 + "%";
-      bubble.style.animationDuration = (8 + Math.random() * 6) + "s";
+  createBubble(text);
 
-      ocean.appendChild(bubble);
+  /* SEND TO FIREBASE (if enabled)
+  tipsRef.push({
+    text,
+    time: Date.now()
+  });
+  */
 
-      setTimeout(() => {
-        bubble.remove();
-      }, 12000);
-    }
-  </script>
+  input.value = "";
+});
+
+/* 🌊 bubble creation */
+function createBubble(text) {
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.innerText = text;
+
+  b.style.left = Math.random() * 70 + "%";
+  b.style.animationDuration = (10 + Math.random() * 6) + "s";
+
+  ocean.appendChild(b);
+
+  setTimeout(() => b.remove(), 15000);
+}
+
+/* 🐟 fish */
+function spawnFish() {
+  const f = document.createElement("div");
+  f.className = "fish";
+  f.innerText = "🐟";
+  f.style.top = Math.random() * 80 + "%";
+  f.style.animationDuration = (12 + Math.random() * 10) + "s";
+  ocean.appendChild(f);
+}
+
+/* 🐬 dolphins */
+function spawnDolphin() {
+  const d = document.createElement("div");
+  d.className = "dolphin";
+  d.innerText = "🐬";
+  d.style.top = Math.random() * 60 + "%";
+  d.style.animationDuration = (18 + Math.random() * 10) + "s";
+  ocean.appendChild(d);
+}
+
+/* 🪼 jellyfish */
+function spawnJelly() {
+  const j = document.createElement("div");
+  j.className = "jelly";
+  j.innerText = "🪼";
+  j.style.left = Math.random() * 90 + "%";
+  j.style.top = Math.random() * 80 + "%";
+  ocean.appendChild(j);
+}
+
+/* LIFE LOOP */
+setInterval(spawnFish, 3000);
+setInterval(spawnDolphin, 8000);
+setInterval(spawnJelly, 2500);
+</script>
 
 </body>
 </html>
