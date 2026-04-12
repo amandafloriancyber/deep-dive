@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>deep-dive</title> 
+<title>deep-dive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
 <style>
@@ -974,16 +974,10 @@ songInput.addEventListener('keydown',e=>{ if(e.key==='Enter')handleSubmit(); });
 
 // ── NORMALIZE BAND NAMES FOR API ──
 async function processSubmission(song, artist, displayText){
-  // ✅ ALWAYS launch bubble locally
-  launchBubble(displayText);
+  // Launch bubble immediately
+  if(window.saveToFirebaseAndSheets) window.saveToFirebaseAndSheets(displayText);
+  else { launchBubble(displayText); saveToSheets(displayText); }
 
-  // then save
-  if(window.saveToFirebaseAndSheets) {
-    window.saveToFirebaseAndSheets(displayText);
-  } else {
-    saveToSheets(displayText);
-  }
-}
   // Reset input
   setTimeout(()=>{
     songInput.style.transition='opacity 0.25s';
