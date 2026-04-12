@@ -151,7 +151,7 @@
     font-family:'Outfit',sans-serif;
     font-weight:200; font-size:24px;
     letter-spacing:0.08em; color:rgba(255,255,255,0.88);
-    text-transform:none;
+    text-transform:lowercase;
   }
   #input-row {
     display:flex; align-items:stretch;
@@ -1064,7 +1064,7 @@ function animateLyricCanvas(lyric){
     lCtx.textAlign='center';
     lCtx.textBaseline='middle';
     lCtx.letterSpacing='0.1em';
-    lCtx.fillText(lyric, tx, ty);
+    lCtx.fillText(lyric.toLowerCase(),tx,ty);
 
     lCtx.restore();
     lyricAnim=requestAnimationFrame(frame);
