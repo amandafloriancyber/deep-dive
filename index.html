@@ -120,7 +120,7 @@
 
   /* ── LYRIC FLOAT ── */
   #lyric-float {
-    position:fixed; left:0; right:0; z-index:9;
+    position:fixed; left:0; right:0; z-index:26;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     pointer-events:none; top:38%;
     opacity:0; transition:opacity 0.8s ease;
@@ -1324,7 +1324,6 @@ const suggestionsRef = ref(db, 'suggestions');
 
 window.saveToFirebaseAndSheets = function(text) {
   // Launch bubble locally immediately — listener will skip it via myKeys
-  launchBubble(text);
   push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
     .then(snap => { myKeys.add(snap.key); });
   saveToSheets(text);
