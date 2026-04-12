@@ -230,7 +230,7 @@
 <div id="bubbles-container"></div>
 
 <!-- LYRIC FLOAT (canvas-drawn, no DOM text) -->
-<canvas id="lyric-canvas" style="position:fixed;inset:0;z-index:9;pointer-events:none;"></canvas>
+<canvas id="lyric-canvas" style="position:fixed;inset:0;z-index:11;pointer-events:none;"></canvas>
 
 <div id="ui">
   <div id="title-block">
@@ -252,63 +252,91 @@ const H=()=>window.innerHeight;
 let mouseX=W()/2, mouseY=H()/2;
 let lastMX=mouseX, lastMY=mouseY;
 
-// ── MOUSE: water rush effect — draws on a canvas, no DOM elements ──
+// ── MOUSE: net cursor + ocean skimming effect ──
+// Hide default cursor
+// Custom net cursor
+document.body.style.cursor="url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PSczMicgdmlld0JveD0nMCAwIDMyIDMyJz48ZyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxOCwxOCkgcm90YXRlKDQwKSc+PGxpbmUgeDE9JzAnIHkxPScwJyB4Mj0nLTEzJyB5Mj0nLTEzJyBzdHJva2U9J3JnYmEoMTgwLDIyMCwyNTUsMC45KScgc3Ryb2tlLXdpZHRoPScxLjUnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPjxjaXJjbGUgY3g9JzAnIGN5PScwJyByPSc4JyBmaWxsPSdub25lJyBzdHJva2U9J3JnYmEoMjAwLDIzNSwyNTUsMC45NSknIHN0cm9rZS13aWR0aD0nMS41Jy8+PGxpbmUgeDE9Jy04JyB5MT0nMCcgeDI9JzgnIHkyPScwJyBzdHJva2U9J3JnYmEoMjAwLDIzNSwyNTUsMC4zNSknIHN0cm9rZS13aWR0aD0nMC44Jy8+PGxpbmUgeDE9JzAnIHkxPSctOCcgeDI9JzAnIHkyPSc4JyBzdHJva2U9J3JnYmEoMjAwLDIzNSwyNTUsMC4zNSknIHN0cm9rZS13aWR0aD0nMC44Jy8+PGxpbmUgeDE9Jy02JyB5MT0nLTYnIHgyPSc2JyB5Mj0nNicgc3Ryb2tlPSdyZ2JhKDIwMCwyMzUsMjU1LDAuMiknIHN0cm9rZS13aWR0aD0nMC43Jy8+PGxpbmUgeDE9JzYnIHkxPSctNicgeDI9Jy02JyB5Mj0nNicgc3Ryb2tlPSdyZ2JhKDIwMCwyMzUsMjU1LDAuMiknIHN0cm9rZS13aWR0aD0nMC43Jy8+PC9nPjwvc3ZnPg==') 16 16, crosshair";
+
 const rushCanvas=document.createElement('canvas');
 rushCanvas.style.cssText='position:fixed;inset:0;z-index:8;pointer-events:none;';
 document.body.appendChild(rushCanvas);
 const rushCtx=rushCanvas.getContext('2d');
-rushCanvas.width=window.innerWidth; rushCanvas.height=window.innerHeight;
 
-let rushTrail=[];
-const RUSH_MAX=38;
+// Wake trail left behind as cursor skims
+let wakeTrail=[];
+let prevMX=mouseX, prevMY=mouseY;
 
 document.addEventListener('mousemove',e=>{
   const vx=e.clientX-mouseX, vy=e.clientY-mouseY;
   mouseX=e.clientX; mouseY=e.clientY;
   const spd=Math.sqrt(vx*vx+vy*vy);
-  if(spd>2){
-    const perp_x=-vy/spd, perp_y=vx/spd;
-    const spread=Math.min(spd*0.55,22);
-    // Add several particles fanned out perpendicular to motion
-    for(let k=0;k<3;k++){
-      const offset=(k-1)*spread*(0.5+Math.random()*0.5);
-      rushTrail.push({
-        x:mouseX+perp_x*offset,
-        y:mouseY+perp_y*offset,
-        vx:perp_x*spd*0.18*(Math.random()-0.5),
-        vy:perp_y*spd*0.18*(Math.random()-0.5),
-        life:1.0,
-        decay:0.025+Math.random()*0.02,
-        width:1.5+Math.random()*spread*0.4,
-        // each streak goes slightly in the direction of motion + outward fan
-        dx:vx/spd*spd*0.12+perp_x*offset*0.04,
-        dy:vy/spd*spd*0.12+perp_y*offset*0.04,
+  if(spd>1.5){
+    // Two diverging wake lines, one each side of the net path
+    const nx=-vy/Math.max(spd,1), ny=vx/Math.max(spd,1);
+    for(let side=-1;side<=1;side+=2){
+      wakeTrail.push({
+        x:mouseX+nx*side*7,
+        y:mouseY+ny*side*7,
+        vx:nx*side*0.6+vx*0.04,
+        vy:ny*side*0.6+vy*0.04,
+        life:1,
+        decay:0.018+Math.random()*0.012,
+        w:1+spd*0.04,
       });
     }
-    if(rushTrail.length>RUSH_MAX*3) rushTrail=rushTrail.slice(-RUSH_MAX*3);
+    // Tiny foam flecks on faster movement
+    if(spd>8){
+      for(let k=0;k<2;k++){
+        wakeTrail.push({
+          x:mouseX+(Math.random()-0.5)*14,
+          y:mouseY+(Math.random()-0.5)*14,
+          vx:(Math.random()-0.5)*0.8,
+          vy:(Math.random()-0.5)*0.8-0.3,
+          life:0.7+Math.random()*0.3,
+          decay:0.035+Math.random()*0.02,
+          w:0.6+Math.random()*1.2,
+          foam:true,
+        });
+      }
+    }
+    if(wakeTrail.length>200) wakeTrail=wakeTrail.slice(-200);
   }
   scatterBubbles();
 });
 
-function drawRush(){
+
+function drawRush(t){
   rushCanvas.width=W(); rushCanvas.height=H();
   rushCtx.clearRect(0,0,W(),H());
-  rushTrail=rushTrail.filter(p=>p.life>0);
-  rushTrail.forEach(p=>{
-    p.x+=p.dx; p.y+=p.dy;
+
+  // Draw wake trail
+  wakeTrail=wakeTrail.filter(p=>p.life>0);
+  wakeTrail.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy;
+    p.vx*=0.96; p.vy*=0.96;
     p.life-=p.decay;
-    if(p.life<=0)return;
+    if(p.life<=0) return;
     rushCtx.save();
-    rushCtx.globalAlpha=p.life*0.18;
-    rushCtx.strokeStyle=`rgba(190,230,250,${p.life})`;
-    rushCtx.lineWidth=p.width*(p.life*0.7+0.3);
-    rushCtx.lineCap='round';
-    rushCtx.beginPath();
-    rushCtx.moveTo(p.x,p.y);
-    rushCtx.lineTo(p.x+p.dx*3,p.y+p.dy*3);
-    rushCtx.stroke();
+    if(p.foam){
+      rushCtx.globalAlpha=p.life*0.5;
+      rushCtx.beginPath();
+      rushCtx.arc(p.x,p.y,p.w,0,Math.PI*2);
+      rushCtx.fillStyle='rgba(220,240,252,1)';
+      rushCtx.fill();
+    } else {
+      rushCtx.globalAlpha=p.life*0.22;
+      rushCtx.strokeStyle=`rgba(190,228,248,1)`;
+      rushCtx.lineWidth=p.w*p.life;
+      rushCtx.lineCap='round';
+      rushCtx.beginPath();
+      rushCtx.moveTo(p.x,p.y);
+      rushCtx.lineTo(p.x+p.vx*4,p.y+p.vy*4);
+      rushCtx.stroke();
+    }
     rushCtx.restore();
   });
+
+
 }
 
 // ══════════════════════════
@@ -963,24 +991,11 @@ async function processSubmission(song, artist, displayText){
     },250);
   },400);
 
-  // Fetch lyric in background — show AFTER bubble has risen (~4s)
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:60,
-        messages:[{role:'user',content:`You know worship music well. Give me ONE memorable lyric line (5-10 words) from "${song}" by ${artist}. Common abbreviations: Elevation=Elevation Worship, Bethel=Bethel Music, Hillsong=Hillsong Worship. Ignore capitalization and punctuation differences when identifying the song. Reply with ONLY the lyric itself, no quotes, no punctuation at ends, nothing else. If truly unknown reply: UNKNOWN`}]
-      })
-    });
-    const data=await res.json();
-    const lyric=data.content?.[0]?.text?.trim();
-    if(lyric&&lyric!=='UNKNOWN'&&lyric.length>3&&!PROFANITY.test(lyric)){
-      // Wait for bubble to finish rising (~4.2s) then show lyric
-      setTimeout(()=>animateLyricCanvas(lyric), 4200);
-    }
-  }catch(e){}
+  // Look up lyric from local library — show AFTER bubble has risen (~4s)
+  const lyric = findLyric(song, artist);
+  if (lyric && !PROFANITY.test(lyric)) {
+    setTimeout(() => animateLyricCanvas(lyric), 3800);
+  }
 }
 
 // ── LYRIC CANVAS ANIMATION ──
@@ -989,66 +1004,66 @@ const lCtx=lCanvas.getContext('2d');
 let lyricAnim=null;
 
 function animateLyricCanvas(lyric){
-  lCanvas.width=W(); lCanvas.height=H();
-  const totalDur=7000;
+  if(lCanvas.width!==W()||lCanvas.height!==H()){lCanvas.width=W();lCanvas.height=H();}
+  lCtx.clearRect(0,0,W(),H());
+  const totalDur=9000; // nice and slow so it's readable
   const startT=performance.now();
-  // Lyric drifts slowly from left to right across mid-screen
-  const startX=-60;
-  const endX=W()+60;
-  const baseY=H()*0.42;
-  // Monochromatic note companions — spaced along the path
+  const cx=W()/2;
+  const cy=H()*0.52; // center of screen, slightly below middle
+
   const noteGlyphs=['♩','♪','♫','♬'];
   const notes=[];
-  for(let i=0;i<6;i++){
+  for(let i=0;i<5;i++){
     notes.push({
       glyph:noteGlyphs[i%noteGlyphs.length],
-      offsetX:(Math.random()-0.5)*180,
-      offsetY:(Math.random()-0.5)*40,
-      size:7+Math.random()*5,
+      offsetX:(Math.random()-0.5)*160,
+      offsetY:(Math.random()-0.5)*30,
+      size:6+Math.random()*4,
       phase:Math.random()*Math.PI*2,
-      opacity:0.18+Math.random()*0.18,
+      opacity:0.15+Math.random()*0.15,
     });
   }
 
   function frame(now){
     const elapsed=now-startT;
     const prog=Math.min(1,elapsed/totalDur);
-    // Slow fade in (0-18%), hold (18-78%), fade out (78-100%)
+    // Very slow fade in (0-20%), long hold (20-75%), gentle fade out (75-100%)
     let alpha;
-    if(prog<0.18) alpha=prog/0.18;
-    else if(prog<0.78) alpha=1;
-    else alpha=1-(prog-0.78)/0.22;
+    if(prog<0.20) alpha=prog/0.20;
+    else if(prog<0.75) alpha=1;
+    else alpha=1-(prog-0.75)/0.25;
 
     lCtx.clearRect(0,0,W(),H());
     if(prog>=1){ lCtx.clearRect(0,0,W(),H()); return; }
 
     const t=elapsed;
-    // Text travels across — ease-in-out
-    const ease=prog<0.5?2*prog*prog:1-Math.pow(-2*prog+2,2)/2;
-    const tx=startX+(endX-startX)*ease;
-    // Gentle vertical wave as it travels
-    const ty=baseY+Math.sin(prog*Math.PI*2.2)*6+Math.sin(t*0.0009)*3;
+    // Gentle wave — stays centered, just undulates softly in place
+    const waveY=Math.sin(t*0.0006)*5+Math.sin(t*0.0004+1.2)*3;
+    const waveX=Math.sin(t*0.0005+0.8)*4;
+    const ty=cy+waveY;
+    const tx=cx+waveX;
 
     lCtx.save();
 
-    // Draw notes first (behind text), all monochromatic white/grey
+    // Soft notes around the lyric, also gently drifting
     notes.forEach(n=>{
-      const nx=tx+n.offsetX;
-      const ny=ty+n.offsetY+Math.sin(t*0.0012+n.phase)*5;
+      const nx=tx+n.offsetX+Math.sin(t*0.0008+n.phase)*8;
+      const ny=ty+n.offsetY+Math.cos(t*0.0006+n.phase)*5;
       lCtx.globalAlpha=alpha*n.opacity;
-      lCtx.fillStyle='rgba(220,230,240,1)';
+      lCtx.fillStyle='rgba(215,228,238,1)';
       lCtx.font=`${n.size}px serif`;
       lCtx.textAlign='center';
       lCtx.textBaseline='middle';
       lCtx.fillText(n.glyph,nx,ny);
     });
 
-    // Lyric text — small, quiet, italic
-    lCtx.globalAlpha=alpha*0.72;
-    lCtx.fillStyle='rgba(210,220,230,1)';
-    lCtx.font='italic 300 9px "Jost",sans-serif';
+    // Lyric — small, italic, white-grey, centered, wavy
+    lCtx.globalAlpha=alpha*0.78;
+    lCtx.fillStyle='rgba(215,228,238,1)';
+    lCtx.font='italic 300 10px "Jost",sans-serif';
     lCtx.textAlign='center';
     lCtx.textBaseline='middle';
+    lCtx.letterSpacing='0.1em';
     lCtx.fillText(lyric.toLowerCase(),tx,ty);
 
     lCtx.restore();
@@ -1056,6 +1071,210 @@ function animateLyricCanvas(lyric){
   }
   if(lyricAnim) cancelAnimationFrame(lyricAnim);
   lyricAnim=requestAnimationFrame(frame);
+}
+
+const SONG_LYRICS={
+'how great is our god':'name above all names, worthy of all praise',
+'how great thou art':'then sings my soul my savior God to thee',
+'amazing grace':'I once was lost, but now I'm found',
+'blessed assurance':'This is my story, this is my song',
+'great is thy faithfulness':'morning by morning, new mercies I see',
+'it is well with my soul':'when peace like a river attendeth my way',
+'it is well':'through it all, through it all, my eyes are on You',
+'holy holy holy':'holy holy holy, Lord God almighty',
+'be thou my vision':'be thou my vision o Lord of my heart',
+'come thou fount':'come thou fount of every blessing',
+'good good father':'youre a good good father its who you are',
+'our god':'And if our God is for us, then who could ever stop us?',
+'holy is the lord':'The earth is filled with His glory',
+'indescribable':'indescribable uncontainable, you placed the stars in the sky',
+'we fall down':'we fall down, we lay our crowns at the feet of jesus',
+'jesus messiah':'Jesus messiah name above all names',
+'at the cross':'oh lord youve searched me you know my way',
+'white flag':'the battle rages on as storms and waves crash in',
+'oceans':'spirit lead me where my trust is without borders',
+'what a beautiful name':'you were the word at the beginning',
+'cornerstone':'my hope is built on nothing less than Jesus blood and righteousness',
+'shout to the lord':'my Jesus my savior lord there is none like you',
+'mighty to save':'everyone needs compassion a love thats never failing',
+'hosanna':'i see the king of glory coming on the clouds with fire',
+'from the inside out':'a thousand times ive failed still your mercy remains',
+'healer':'you hold my every moment you calm my raging seas',
+'forever reign':'you are good you are good when theres nothing good in me',
+'touch the sky':'what treasure waits within your scars',
+'so will i':'God of creation there at the start before the beginning of time',
+'prince of peace':'i reach for you in the morning',
+'even when it hurts':'take this fainted heart take these tainted hands',
+'graves into gardens':'i searched the world but it couldnt fill me',
+'do it again':'walking around these walls i thought by now theyd fall',
+'raise a hallelujah':'i raise a hallelujah in the presence of my enemies',
+'see a victory':'the weapon may be formed but it wont prosper',
+'goodness of god':'i love you lord oh your mercy never fails me',
+'build my life':'worthy of every song we could ever sing',
+'come to the altar':'are you hurting and broken within',
+'o come to the altar':'are you hurting and broken within',
+'here again':'endless faithful endless faithful you are endless faithful',
+'the blessing':'the lord bless you and keep you make his face shine upon you',
+'lion and the lamb':'hes coming on the clouds kings and kingdoms will bow down',
+'great are you lord':'you give life you are love you bring light to the darkness',
+'jireh':'jireh you are enough jireh you are enough',
+'fear is not my future':'fear is not my future you are my future',
+'no longer slaves':'i am no longer a slave to fear i am a child of God',
+'reckless love':'before i spoke a word you were singing over me',
+'ever be':'your love is devoted like a ring of solid gold',
+'you make me brave':'you make me brave you call me out beyond the shore',
+'holy spirit':'there is nothing worth more that will ever come close',
+'king of my heart':'let the king of my heart be the mountain where i run',
+'peace':'peace be still say the word and ill be quiet',
+'worthy of your name':'holy there is no one like you',
+'glorious day':'i was buried beneath my shame who could carry that kind of weight',
+'death was arrested':'alone in my sorrow and dead in my sin',
+'one thing remains':'higher than the mountains that i face stronger than the power of the grave',
+'this is amazing grace':'who breaks the power of sin and darkness',
+'your love awakens me':'there were walls between us ancient miles between us',
+'living hope':'how great the chasm that lay between us',
+'holy forever':'a thousand generations falling down in worship',
+'battle belongs':'when i fight i will fight on my knees with my hands lifted high',
+'hymn of heaven':'how i long to breathe the air of heaven',
+'you say':'i keep fighting voices in my mind that say im not enough',
+'trust in you':'letting go of every single dream i lay each one down at your feet',
+'how can it be':'i am guilty ashamed of what ive done what ive become',
+'rescue':'you are not hidden theres never been a moment you were forgotten',
+'look up child':'where are you now when darkness seems to win',
+'gratitude':'all my words fall short i got nothing new how could i express my gratitude',
+'hard fought hallelujah':'when your hope is shattered and your faith is thin',
+'how he loves':'he is jealous for me loves like a hurricane i am a tree',
+'come as you are':'come out of sadness from wherever youve been',
+'10000 reasons':'bless the lord oh my soul oh my soul worship his holy name',
+'never once':'standing on this mountain top looking just how far weve come',
+'you never let go':'oh no you never let go through the calm and through the storm',
+'blessed be your name':'blessed be your name in the land that is plentiful',
+'heart of worship':'when the music fades all is stripped away and i simply come',
+'the heart of worship':'when the music fades all is stripped away and i simply come',
+'waymaker':'you are way maker miracle worker promise keeper light in the darkness',
+'way maker':'you are way maker miracle worker promise keeper light in the darkness',
+'open the eyes of my heart':'open the eyes of my heart lord i want to see you',
+'days of elijah':'these are the days of elijah declaring the word of the lord',
+'lord i lift your name on high':'lord i lift your name on high lord i love to sing your praises',
+'trading my sorrows':'i am trading my sorrows i am trading my shame',
+'worthy is the lamb':'thank you for the cross lord thank you for the price you paid',
+'revelation song':'worthy is the lamb who was slain holy holy is he',
+'friend of god':'i am a friend of God he calls me friend',
+'above all':'above all powers above all kings above all nature and all created things',
+'in christ alone':'in christ alone my hope is found he is my light my strength my song',
+'everlasting god':'strength will rise as we wait upon the lord',
+'i could sing of your love forever':'over the mountains and the sea your river runs with love for me',
+'who you say i am':'who the son sets free oh is free indeed im a child of God',
+'stand in your love':'when darkness tries to roll over my bones shame no longer has a place to hide',
+'firm foundation':'christ is my firm foundation the rock on which i stand',
+'firm foundation he wont':'christ is my firm foundation the rock on which i stand',
+'another in the fire':'there is no other name but the name that is Jesus',
+'o praise the name':'i cast my mind to calvary where Jesus bled and died for me',
+'yes i will':'i count on one thing the same God that never fails',
+'echo holy':'ten thousand years and then forever more',
+'canvas and clay':'lord i want to be your humble vessel',
+'hills and valleys':'on the mountains i will bow my life to the one who set me there',
+'promises':'God of promises you dont break promises you keep them',
+'man of your word':'you are a man of your word you are not done yet',
+'i still believe':'scattered words and empty thoughts seem to pour from my heart',
+'give me jesus':'in the morning when i rise give me Jesus',
+'i am not alone':'when i walk through deep waters i know that you will be with me',
+'steady my heart':'wish i could see the beauty in the lessons learned in the pain',
+'give thanks':'give thanks with a grateful heart give thanks to the holy one',
+'eagles wings':'here i am waiting abide in me i pray',
+'i surrender all':'all to Jesus i surrender all to him i freely give',
+'the fathers house':'sometimes the way is lonely and steep and filled with pain',
+'better word':'you are speaking a better word',
+'spirit break out':'spirit break out break our walls down',
+'jesus at the center':'from beginning to the end ... it's always been you Jesus',
+'made a way':'i dont know how but youve never failed me God youve never failed me',
+'intentional':'nothing that surprises you is beyond your control you are intentional',
+'worthy of it all':'all the earth will sing your praises people and nations will cry',
+'goodness':'your goodness is running after running after me',
+'endless hallelujah':'let the church arise let her fill the earth',
+'beautiful one':'wonderful so wonderful is your unfailing love',
+'salvation is here':'i know that my redeemer lives conquered death forever more',
+'shine jesus shine':'lord the light of your love is shining in the midst of the darkness shining',
+'let everything that has breath':'let everything that has breath praise the lord',
+'in the secret':'in the secret in the quiet place in the stillness you are there',
+'i love you lord':'i love you lord and i lift my voice to worship you o my soul rejoice',
+'same god':'i know the same God who was faithful then is faithful now',
+'talking to jesus':'i heard about a man who could heal the sick and raise the dead',
+'nothing else':'i am not skilled to understand what God has willed what God has planned',
+'joy of the lord':'the joy of the lord is my strength',
+'chain breaker':'if youve got pain hes a pain taker if youve got joy hes a joy maker',
+'surrounded fight my battles':'this is how i fight my battles',
+'surrounded':'this is how i fight my battles it may look like im surrounded',
+'here i am to worship':'light of the world you stepped down into darkness',
+'better is one day':'how lovely is your dwelling place o lord almighty',
+'hungry':'hungry i come to you for i know you satisfy',
+'more love more power':'more love more power more of you in my life',
+'awesome god':'our God is an awesome God he reigns from heaven above',
+'anchor':'i have this hope as an anchor for my soul',
+'agnus dei':'alleluia alleluia for the lord God almighty reigns',
+'how deep the fathers love':'how deep the fathers love for us how vast beyond all measure',
+'breathe':'this is the air i breathe your holy presence living in me',
+'draw me close':'draw me close to you never let me go',
+'here i am lord':'i the lord of sea and sky i have heard my people cry',
+'step by step':'o God you are my God and i will ever praise you',
+'glorious ruins':'i stand before you now in the place where i belong',
+'glory to god forever':'before the world was made before you spoke it to be',
+'i give you my heart':'this is my desire to honor you',
+'still':'hide me now under your wings cover me within your mighty hand',
+'none but jesus':'in the quiet in the stillness i know that you are God',
+'desert song':'this is my prayer in the desert when all thats within me feels dry',
+'this is living':'now that i have found a life in you',
+'the garden':'when my heart is troubled and the dark of night is long',
+'forever kari':'the moon and stars they wept the morning sun was dead',
+'wait on you':'i wait on you i wait on you',
+'champion':'you are the lion and the lamb you are the lord of all',
+'what a friend we have in jesus':'what a friend we have in Jesus all our sins and griefs to bear',
+'seek ye first':'seek ye first the kingdom of God and his righteousness',
+'as the deer':'as the deer panteth for the water so my soul longeth after thee',
+'sanctuary':'lord prepare me to be a sanctuary pure and holy tried and true',
+'turn your eyes upon jesus':'turn your eyes upon Jesus look full in his wonderful face',
+'give me faith':'i need you to soften my heart and break me apart',
+'make room':'im making room for you to do whatever you want to',
+'let the river flow':'let the poor man say i am rich in him',
+'refine me':'lord refine me refine me purify until your glory shines',
+'child of god':'i am a child of God and he calls me his own',
+'in jesus name':'i pray for your healing that circumstances would change',
+'known':'before the morning light before the world begins to wake',
+'gratitude brandon':'all my words fall short i got nothing new',
+'create in me a clean heart':'create in me a clean heart o God',
+'we exalt thee':'for thou o lord art high above all the earth',
+'lord reign in me':'over all the earth you reign on high',
+'my tribute':'how can i say thanks for the things you have done for me',
+'holy ground':'we are standing on holy ground and i know that there are angels all around',
+'there is power in the blood':'would you be free from the burden of sin there is power in the blood',
+'living water':'i heard the voice of Jesus say come unto me and rest',
+'reason i sing':'the reason that i sing is because hes so good to me',
+'let the church rise':'let the church rise from the ashes let the church fall to her knees',
+'you waited':'lord i really blew it this time but you waited',
+};
+
+function findLyric(song,artist){
+  function clean(s){
+    return s.toLowerCase()
+      .replace(/[^a-z0-9 ]/g,'')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+  const cs=clean(song), ca=clean(artist);
+  // Direct song title match
+  if(SONG_LYRICS[cs]) return SONG_LYRICS[cs];
+  // Song + first artist word
+  const artistWord=ca.split(' ')[0];
+  const combos=[cs+' '+ca, cs+' '+artistWord, artistWord+' '+cs];
+  for(const k of combos){if(SONG_LYRICS[k])return SONG_LYRICS[k];}
+  // Substring match — key inside song title or song title inside key
+  for(const key of Object.keys(SONG_LYRICS)){
+    const ck=clean(key);
+    if(cs===ck) return SONG_LYRICS[key];
+    if(cs.length>3&&ck.includes(cs)) return SONG_LYRICS[key];
+    if(ck.length>3&&cs.includes(ck)) return SONG_LYRICS[key];
+  }
+  return null;
 }
 
 // ── GOOGLE SHEETS ──
@@ -1078,7 +1297,7 @@ window.addEventListener('resize',()=>{
 initRays(); initHaze(); initParticles(); initNotes(); initCreatures();
 
 function loop(t){
-  drawRays(t); drawHaze(t); drawParticles(t); drawNotes(t); updateCreatures(t); drawRush();
+  drawRays(t); drawHaze(t); drawParticles(t); drawNotes(t); updateCreatures(t); drawRush(t);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
@@ -1104,20 +1323,23 @@ const db = getDatabase(app);
 const suggestionsRef = ref(db, 'suggestions');
 
 window.saveToFirebaseAndSheets = function(text) {
+  // Launch bubble locally immediately — listener will skip it via myKeys
+  launchBubble(text);
   push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
-    .then(snap => { myKeys.add(snap.key); launchBubble(text); });
+    .then(snap => { myKeys.add(snap.key); });
   saveToSheets(text);
 };
 
-// Listen for new submissions from others
+// Listen for new submissions from others only
 let initialLoadDone = false;
 onChildAdded(suggestionsRef, snap => {
-  if (!initialLoadDone) return; // skip pre-existing entries
-  if (myKeys.has(snap.key)) return; // skip our own
+  if (!initialLoadDone) return;  // skip pre-existing on page load
+  if (myKeys.has(snap.key)) return; // skip our own submissions
   const song = snap.val()?.song;
   if (song) setTimeout(() => launchBubble(song), Math.random() * 800);
 });
-setTimeout(() => { initialLoadDone = true; }, 1500);
+// Give Firebase time to load existing entries before listening for new ones
+setTimeout(() => { initialLoadDone = true; }, 2000);
 </script>
 </body>
 </html>
