@@ -120,7 +120,7 @@
 
   /* ── LYRIC FLOAT ── */
   #lyric-float {
-    position:fixed; left:0; right:0; z-index:26;
+    position:fixed; left:0; right:0; z-index:9;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     pointer-events:none; top:38%;
     opacity:0; transition:opacity 0.8s ease;
@@ -254,8 +254,7 @@ let lastMX=mouseX, lastMY=mouseY;
 
 // ── MOUSE: net cursor + ocean skimming effect ──
 // Hide default cursor
-// Custom net cursor
-document.body.style.cursor="url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PSczMicgdmlld0JveD0nMCAwIDMyIDMyJz48ZyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxOCwxOCkgcm90YXRlKDQwKSc+PGxpbmUgeDE9JzAnIHkxPScwJyB4Mj0nLTEzJyB5Mj0nLTEzJyBzdHJva2U9J3JnYmEoMTgwLDIyMCwyNTUsMC45KScgc3Ryb2tlLXdpZHRoPScxLjUnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPjxjaXJjbGUgY3g9JzAnIGN5PScwJyByPSc4JyBmaWxsPSdub25lJyBzdHJva2U9J3JnYmEoMjAwLDIzNSwyNTUsMC45NSknIHN0cm9rZS13aWR0aD0nMS41Jy8+PGxpbmUgeDE9Jy04JyB5MT0nMCcgeDI9JzgnIHkyPScwJyBzdHJva2U9J3JnYmEoMjAwLDIzNSwyNTUsMC4zNSknIHN0cm9rZS13aWR0aD0nMC44Jy8+PGxpbmUgeDE9JzAnIHkxPSctOCcgeDI9JzAnIHkyPSc4JyBzdHJva2U9J3JnYmEoMjAwLDIzNSwyNTUsMC4zNSknIHN0cm9rZS13aWR0aD0nMC44Jy8+PGxpbmUgeDE9Jy02JyB5MT0nLTYnIHgyPSc2JyB5Mj0nNicgc3Ryb2tlPSdyZ2JhKDIwMCwyMzUsMjU1LDAuMiknIHN0cm9rZS13aWR0aD0nMC43Jy8+PGxpbmUgeDE9JzYnIHkxPSctNicgeDI9Jy02JyB5Mj0nNicgc3Ryb2tlPSdyZ2JhKDIwMCwyMzUsMjU1LDAuMiknIHN0cm9rZS13aWR0aD0nMC43Jy8+PC9nPjwvc3ZnPg==') 16 16, crosshair";
+// No custom cursor
 
 const rushCanvas=document.createElement('canvas');
 rushCanvas.style.cssText='position:fixed;inset:0;z-index:8;pointer-events:none;';
@@ -340,7 +339,7 @@ function drawRush(t){
 }
 
 // ══════════════════════════
-// God RAYS — soft & blended
+// GOD RAYS — soft & blended
 // ══════════════════════════
 const raysCanvas=document.getElementById('rays-canvas');
 const rCtx=raysCanvas.getContext('2d');
@@ -403,7 +402,7 @@ const pCtx=pCanvas.getContext('2d');
 let particles=[];
 function initParticles(){
   pCanvas.width=W(); pCanvas.height=H(); particles=[];
-  for(let i=0;i<105;i++) particles.push(makeParticle(true));
+  for(let i=0;i<130;i++) particles.push(makeParticle(true));
 }
 function makeParticle(rndY=false){
   const isSpark=Math.random()>0.52;
@@ -411,11 +410,12 @@ function makeParticle(rndY=false){
     x:Math.random()*W(), y:rndY?Math.random()*H():H()+10,
     size:isSpark?0.85+Math.random()*1.6:0.4+Math.random()*0.95,
     speed:0.065+Math.random()*0.21,
-    opacity:isSpark?0.4+Math.random()*0.48:0.08+Math.random()*0.18,
+    opacity:isSpark?0.38+Math.random()*0.42:0.07+Math.random()*0.16,
     drift:(Math.random()-0.5)*0.14,
     phase:Math.random()*Math.PI*2,
     twinkle:0.001+Math.random()*0.003,
-    hue:175+Math.random()*95, isSpark,
+    hue:175+Math.random()*95,
+    isSpark, isBurst:false,
   };
 }
 function drawParticles(t){
@@ -924,6 +924,24 @@ function expandArtist(raw){
   return raw.replace(/\b\w/g,ch=>ch.toUpperCase());
 }
 
+// ── TEXT HELPERS ──
+const SKIP_WORDS=new Set(['a','an','the','and','but','or','nor','for','so','yet','at','by','in','of','on','to','up','as','is','it']);
+const HOLY_WORDS={'god':'God','jesus':'Jesus','lord':'Lord','he':'He','him':'Him','his':'His','holy':'Holy'};
+
+function titleCase(str){
+  return str.trim().replace(/[^a-zA-Z0-9\s'\-]/g,'').split(' ').map((w,i)=>{
+    if(!w) return w;
+    const low=w.toLowerCase();
+    if(HOLY_WORDS[low]) return HOLY_WORDS[low];
+    if(i>0&&SKIP_WORDS.has(low)) return low;
+    return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+function holyCase(str){
+  return str.replace(/\b(god|jesus|lord|he|him|his|holy)\b/gi,m=>HOLY_WORDS[m.toLowerCase()]||m);
+}
+
 function handleSubmit(){
   if(isProcessing)return;
   const val=songInput.value.trim();
@@ -954,7 +972,7 @@ function handleSubmit(){
       return;
     }
     const artist=expandArtist(val);
-    const song=pendingSong;
+    const song=titleCase(pendingSong);
     songInput.style.transition='opacity 0.25s';
     songInput.style.opacity='0';
     setTimeout(()=>{
@@ -1064,7 +1082,7 @@ function animateLyricCanvas(lyric){
     lCtx.textAlign='center';
     lCtx.textBaseline='middle';
     lCtx.letterSpacing='0.1em';
-    lCtx.fillText(lyric.toLowerCase(),tx,ty);
+    lCtx.fillText(holyCase(lyric.toLowerCase()),tx,ty);
 
     lCtx.restore();
     lyricAnim=requestAnimationFrame(frame);
@@ -1074,183 +1092,183 @@ function animateLyricCanvas(lyric){
 }
 
 const SONG_LYRICS={
-'how great is our God':'how great is our God sing with me',
-'how great thou art':'then sings my soul my savior God to thee',
-'amazing grace':'amazing grace how sweet the sound',
-'blessed assurance':'blessed assurance Jesus is mine',
-'great is thy faithfulness':'great is thy faithfulness morning by morning new mercies i see',
-'it is well with my soul':'when peace like a river attendeth my way',
-'it is well':'through it all, my eyes are on You',
-'holy holy holy':'holy holy holy Lord God almighty',
-'be thou my vision':'be thou my vision o Lord of my heart',
-'come thou fount':'come thou fount of every blessing',
-'good good father':'youre a good good father its who you are',
-'our God':'our God is greater our God is stronger',
-'holy is the Lord':'holy is the Lord God almighty the earth is filled with his glory',
-'indescribable':'indescribable uncontainable you placed the stars in the sky',
-'we fall down':'we fall down we lay our crowns at the feet of Jesus',
-'Jesus messiah':'Jesus messiah name above all names',
-'at the cross':'oh Lord youve searched me you know my way',
-'white flag':'the battle rages on as storms and waves crash in',
-'oceans':'spirit lead me where my trust is without borders',
-'what a beautiful name':'you were the word at the beginning',
-'cornerstone':'my hope is built on nothing less than Jesus blood and righteousness',
-'shout to the Lord':'my Jesus my savior Lord there is none like you',
-'mighty to save':'everyone needs compassion a love thats never failing',
-'hosanna':'i see the king of glory coming on the clouds with fire',
-'from the inside out':'a thousand times ive failed still your mercy remains',
-'healer':'you hold my every moment you calm my raging seas',
-'forever reign':'you are good you are good when theres nothing good in me',
-'touch the sky':'what treasure waits within your scars',
-'so will i':'God of creation there at the start before the beginning of time',
-'prince of peace':'i reach for you in the morning',
-'even when it hurts':'take this fainted heart take these tainted hands',
-'graves into gardens':'i searched the world but it couldnt fill me',
-'do it again':'walking around these walls i thought by now theyd fall',
-'raise a hallelujah':'i raise a hallelujah in the presence of my enemies',
-'see a victory':'the weapon may be formed but it wont prosper',
-'goodness of God':'i love you Lord oh your mercy never fails me',
-'build my life':'worthy of every song we could ever sing',
-'come to the altar':'are you hurting and broken within',
-'o come to the altar':'are you hurting and broken within',
-'here again':'endless faithful endless faithful you are endless faithful',
-'the blessing':'the Lord bless you and keep you make his face shine upon you',
-'lion and the lamb':'hes coming on the clouds kings and kingdoms will bow down',
-'great are you Lord':'you give life you are love you bring light to the darkness',
-'jireh':'jireh you are enough jireh you are enough',
-'fear is not my future':'fear is not my future you are my future',
-'no longer slaves':'i am no longer a slave to fear i am a child of God',
-'reckless love':'before i spoke a word you were singing over me',
-'ever be':'your love is devoted like a ring of solid gold',
-'you make me brave':'you make me brave you call me out beyond the shore',
-'holy spirit':'there is nothing worth more that will ever come close',
-'king of my heart':'let the king of my heart be the mountain where i run',
-'peace':'peace be still say the word and ill be quiet',
-'worthy of your name':'holy there is no one like you',
-'glorious day':'i was buried beneath my shame who could carry that kind of weight',
-'death was arrested':'alone in my sorrow and dead in my sin',
-'one thing remains':'higher than the mountains that i face stronger than the power of the grave',
-'this is amazing grace':'who breaks the power of sin and darkness',
-'your love awakens me':'there were walls between us ancient miles between us',
-'living hope':'how great the chasm that lay between us',
-'holy forever':'a thousand generations falling down in worship',
-'battle belongs':'when i fight i will fight on my knees with my hands lifted high',
-'hymn of heaven':'how i long to breathe the air of heaven',
-'you say':'i keep fighting voices in my mind that say im not enough',
-'trust in you':'letting go of every single dream i lay each one down at your feet',
-'how can it be':'i am guilty ashamed of what ive done what ive become',
-'rescue':'you are not hidden theres never been a moment you were forgotten',
-'look up child':'where are you now when darkness seems to win',
-'gratitude':'all my words fall short i got nothing new how could i express my gratitude',
-'hard fought hallelujah':'when your hope is shattered and your faith is thin',
-'how he loves':'he is jealous for me loves like a hurricane i am a tree',
-'come as you are':'come out of sadness from wherever youve been',
-'10000 reasons':'bless the Lord oh my soul oh my soul worship his holy name',
-'never once':'standing on this mountain top looking just how far weve come',
-'you never let go':'oh no you never let go through the calm and through the storm',
-'blessed be your name':'blessed be your name in the land that is plentiful',
-'heart of worship':'when the music fades all is stripped away and i simply come',
+'how great is our god':'How great is our God sing with me',
+'how great thou art':'Then sings my soul how great Thou art',
+'amazing grace':'Amazing grace how sweet the sound that saved a wretch like me',
+'blessed assurance':'This is my story this is my song praising my Savior',
+'great is thy faithfulness':'Morning by morning new mercies I see',
+'it is well with my soul':'It is well it is well with my soul',
+'it is well':'Through it all through it all my eyes are on You',
+'holy holy holy':'Holy holy holy Lord God Almighty',
+'be thou my vision':'Be Thou my vision O Lord of my heart',
+'come thou fount':'Prone to wander Lord I feel it prone to leave the God I love',
+'good good father':'You\'re a good good Father it\'s who You are',
+'our god':'Our God is greater our God is stronger God You are higher than any other',
+'holy is the lord':'Holy is the Lord God Almighty the earth is filled with His glory',
+'indescribable':'Indescribable uncontainable You placed the stars in the sky',
+'we fall down':'And we cry holy holy holy is the Lamb',
+'jesus messiah':'Jesus Messiah name above all names',
+'at the cross':'At the cross at the cross I surrender my life',
+'white flag':'We raise our white flag we surrender all to You',
+'oceans':'Spirit lead me where my trust is without borders',
+'what a beautiful name':'What a beautiful name it is nothing compares to this',
+'cornerstone':'Christ alone cornerstone',
+'shout to the lord':'Shout to the Lord all the earth let us sing power and majesty praise to the King',
+'mighty to save':'Savior He can move the mountains my God is mighty to save',
+'hosanna':'Hosanna hosanna You are the God who saves us',
+'from the inside out':'Everlasting Your light will shine when all else fades',
+'healer':'I believe You\'re my Healer I believe You are all I need',
+'forever reign':'You are good You are good when there\'s nothing good in me',
+'touch the sky':'My heart beating my soul breathing I found my life when I laid it down',
+'so will i':'And as You speak a hundred billion creatures catch Your breath so will I',
+'prince of peace':'You are peace You are peace when my fear is crippling',
+'even when it hurts':'Even when it hurts like hell I\'ll praise You',
+'graves into gardens':'You turn graves into gardens death into dancing',
+'do it again':'Your praise will ever be on my lips ever be on my lips',
+'raise a hallelujah':'I raise a hallelujah louder and louder',
+'see a victory':'I'm gonna see a victory for the battle belongs to You',
+'goodness of god':'Your goodness is running after me',
+'build my life':'Holy there is no one like You',
+'come to the altar':'O come to the altar the Father's arms are open wide',
+'o come to the altar':'O come to the altar the Father's arms are open wide',
+'here again':'I\'m here again trusting in the promise You\'ll never leave me',
+'the blessing':'May His favor be upon you and a thousand generations',
+'lion and the lamb':'Worthy is the Lamb who was slain holy holy is He',
+'great are you lord':'It\'s Your breath in our lungs so we pour out our praise',
+'jireh':'I am satisfied in You Jireh You are enough',
+'fear is not my future':'Fear is not my future God You are my future',
+'no longer slaves':'I am no longer a slave to fear I am a child of God',
+'reckless love':'O the overwhelming reckless love of God',
+'ever be':'You will forever be my song my praise will ever be on my lips',
+'you make me brave':'You make me brave You make me brave',
+'holy spirit':'Holy Spirit You are welcome here come flood this place',
+'king of my heart':'You are good good oh You are good good',
+'peace':'Peace be still say the word and I will quiet my heart',
+'worthy of your name':'Holy holy holy You are worthy of my praise',
+'glorious day':'Living He loved me dying He saved me buried He carried my sins far away',
+'death was arrested':'O death was arrested all my life ransomed',
+'one thing remains':'Your love never fails never gives up never runs out on me',
+'this is amazing grace':'This is amazing grace this is unfailing love',
+'your love awakens me':'Your love is greater Your love is better',
+'living hope':'Hallelujah praise the One who set me free',
+'holy forever':'Holy forever holy forever all the saints sing holy forever',
+'battle belongs':'When I fight I fight on my knees with my hands lifted high',
+'hymn of heaven':'There will be a day when all will bow before You',
+'you say':'You say I am loved when I can\'t believe it',
+'trust in you':'You are God alone whether or not I understand',
+'how can it be':'How can it be that You my King would die for me',
+'rescue':'You are not hidden there\'s never been a moment You forgot me',
+'look up child':'Look up child look up child',
+'gratitude':'So I throw up my hands and praise You again and again',
+'hard fought hallelujah':'This is a hard fought hallelujah',
+'how he loves':'Oh how He loves us oh how He loves us',
+'come as you are':'Just as you are just as you are',
+'10000 reasons':'Bless the Lord O my soul worship His holy name',
+'never once':'Never once did we ever walk alone never once did You leave us on our own',
+'you never let go':'Oh no You never let go through the calm and through the storm',
+'blessed be your name':'Blessed be Your name on the road marked with suffering',
+'heart of worship':'I\'ll bring You more than a song for a song in itself is not what You have required',
 'the heart of worship':'when the music fades all is stripped away and i simply come',
-'waymaker':'you are way maker miracle worker promise keeper light in the darkness',
-'way maker':'you are way maker miracle worker promise keeper light in the darkness',
-'open the eyes of my heart':'open the eyes of my heart Lord i want to see you',
-'days of elijah':'these are the days of elijah declaring the word of the Lord',
-'Lord i lift your name on high':'Lord i lift your name on high Lord i love to sing your praises',
-'trading my sorrows':'i am trading my sorrows i am trading my shame',
-'worthy is the lamb':'thank you for the cross Lord thank you for the price you paid',
-'revelation song':'worthy is the lamb who was slain holy holy is he',
-'friend of God':'i am a friend of God he calls me friend',
-'above all':'above all powers above all kings above all nature and all created things',
-'in christ alone':'in christ alone my hope is found he is my light my strength my song',
-'everlasting God':'strength will rise as we wait upon the Lord',
-'i could sing of your love forever':'over the mountains and the sea your river runs with love for me',
-'who you say i am':'who the son sets free oh is free indeed im a child of God',
-'stand in your love':'when darkness tries to roll over my bones shame no longer has a place to hide',
-'firm foundation':'christ is my firm foundation the rock on which i stand',
-'firm foundation he wont':'christ is my firm foundation the rock on which i stand',
-'another in the fire':'there is no other name but the name that is Jesus',
-'o praise the name':'i cast my mind to calvary where Jesus bled and died for me',
-'yes i will':'i count on one thing the same God that never fails',
-'echo holy':'ten thousand years and then forever more',
-'canvas and clay':'Lord i want to be your humble vessel',
-'hills and valleys':'on the mountains i will bow my life to the one who set me there',
-'promises':'God of promises you dont break promises you keep them',
-'man of your word':'you are a man of your word you are not done yet',
-'i still believe':'scattered words and empty thoughts seem to pour from my heart',
-'give me Jesus':'in the morning when i rise give me Jesus',
-'i am not alone':'when i walk through deep waters i know that you will be with me',
-'steady my heart':'wish i could see the beauty in the lessons learned in the pain',
-'give thanks':'give thanks with a grateful heart give thanks to the holy one',
-'eagles wings':'here i am waiting abide in me i pray',
-'i surrender all':'all to Jesus i surrender all to him i freely give',
-'the fathers house':'sometimes the way is lonely and steep and filled with pain',
-'better word':'you are speaking a better word',
-'spirit break out':'spirit break out break our walls down',
-'Jesus at the center':'Jesus at the center of it all from beginning to the end',
-'made a way':'i dont know how but youve never failed me God youve never failed me',
-'intentional':'nothing that surprises you is beyond your control you are intentional',
-'worthy of it all':'all the earth will sing your praises people and nations will cry',
-'goodness':'your goodness is running after running after me',
-'endless hallelujah':'let the church arise let her fill the earth',
-'beautiful one':'wonderful so wonderful is your unfailing love',
-'salvation is here':'i know that my redeemer lives conquered death forever more',
-'shine Jesus shine':'Lord the light of your love is shining in the midst of the darkness shining',
-'let everything that has breath':'let everything that has breath praise the Lord',
-'in the secret':'in the secret in the quiet place in the stillness you are there',
-'i love you Lord':'i love you Lord and i lift my voice to worship you o my soul rejoice',
-'same God':'i know the same God who was faithful then is faithful now',
-'talking to Jesus':'i heard about a man who could heal the sick and raise the dead',
-'nothing else':'i am not skilled to understand what God has willed what God has planned',
-'joy of the Lord':'the joy of the Lord is my strength',
-'chain breaker':'if youve got pain hes a pain taker if youve got joy hes a joy maker',
-'surrounded fight my battles':'this is how i fight my battles',
-'surrounded':'this is how i fight my battles it may look like im surrounded',
-'here i am to worship':'light of the world you stepped down into darkness',
-'better is one day':'how lovely is your dwelling place o Lord almighty',
+'waymaker':'You are here moving in our midst I worship You',
+'way maker':'You are here moving in our midst I worship You',
+'open the eyes of my heart':'Open the eyes of my heart Lord I want to see You',
+'days of elijah':'Behold He comes riding on the clouds shining like the sun',
+'lord i lift your name on high':'Lord I lift Your name on high',
+'trading my sorrows':'Yes Lord yes Lord yes yes Lord amen',
+'worthy is the lamb':'Holy holy holy is the Lord God almighty',
+'revelation song':'Worthy is the Lamb who was slain holy holy is He',
+'friend of god':'Who am I that You are mindful of me',
+'above all':'Crucified laid behind a stone You lived to die rejected and alone',
+'in christ alone':'No power of hell no scheme of man can ever pluck me from His hand',
+'everlasting god':'Our God You reign forever our hope our strong deliverer',
+'i could sing of your love forever':'I could sing of Your love forever',
+'who you say i am':'I am chosen not forsaken I am who You say I am',
+'stand in your love':'I am standing in Your love I am standing in Your love',
+'firm foundation':'He won\'t ever let me down',
+'firm foundation he wont':'He won\'t ever let me down',
+'another in the fire':'There is another in the fire standing next to me',
+'o praise the name':'Praise the name of the risen King',
+'yes i will':'I will praise You on the mountain and I will praise You in the valley',
+'echo holy':'Let all the people echo holy forever',
+'canvas and clay':'You are the potter I am the clay mold me and make me',
+'hills and valleys':'I will praise You on the mountain and I will praise You when the battle\'s won',
+'promises':'You are Jehovah I will trust in You',
+'man of your word':'Every promise You have ever made You have kept',
+'i still believe':'I still believe in Your faithfulness I still believe in Your truth',
+'give me jesus':'You can have all this world give me Jesus',
+'i am not alone':'I am not alone You will go before me',
+'steady my heart':'Steady my heart keep me from falling',
+'give thanks':'And now let the weak say I am strong for it is not by might but by the Spirit of God',
+'eagles wings':'On eagles\' wings I will rise above the storm',
+'i surrender all':'I surrender all I surrender all',
+'the fathers house':'I\'m running to the Father\'s house',
+'better word':'You are speaking a better word over me',
+'spirit break out':'Spirit break out break our walls down',
+'jesus at the center':'Jesus at the center of it all',
+'made a way':'You made a way when there was no way',
+'intentional':'God You don\'t make mistakes You\'re intentional',
+'worthy of it all':'You are worthy of it all worthy of it all',
+'goodness':'Your goodness is running after running after me',
+'endless hallelujah':'Let the church arise and fill the earth with endless hallelujah',
+'beautiful one':'Beautiful One I love You beautiful One I adore',
+'salvation is here':'Salvation is here salvation is here',
+'shine jesus shine':'Shine Jesus shine fill this land with the Father\'s glory',
+'let everything that has breath':'Let everything that has breath praise the Lord',
+'in the secret':'I want to know You more',
+'i love you lord':'I love You Lord and I lift my voice',
+'same god':'The same God who was faithful then is faithful now',
+'talking to jesus':'I\'ve been talking to Jesus all night long',
+'nothing else':'I\'m caught up in grace like an ocean wave',
+'joy of the lord':'The joy of the Lord is my strength',
+'chain breaker':'If you\'ve got chains He\'s a chain breaker',
+'surrounded fight my battles':'This is how I fight my battles it may look like I am surrounded',
+'surrounded':'It may look like I am surrounded but I am surrounded by You',
+'here i am to worship':'I\'ll never know how much it cost to see my sin upon that cross',
+'better is one day':'Better is one day in Your courts than thousands elsewhere',
 'hungry':'hungry i come to you for i know you satisfy',
-'more love more power':'more love more power more of you in my life',
-'awesome God':'our God is an awesome God he reigns from heaven above',
-'anchor':'i have this hope as an anchor for my soul',
-'agnus dei':'alleluia alleluia for the Lord God almighty reigns',
-'how deep the fathers love':'how deep the fathers love for us how vast beyond all measure',
-'breathe':'this is the air i breathe your holy presence living in me',
-'draw me close':'draw me close to you never let me go',
-'here i am Lord':'i the Lord of sea and sky i have heard my people cry',
-'step by step':'o God you are my God and i will ever praise you',
-'glorious ruins':'i stand before you now in the place where i belong',
-'glory to God forever':'before the world was made before you spoke it to be',
-'i give you my heart':'this is my desire to honor you',
-'still':'hide me now under your wings cover me within your mighty hand',
-'none but Jesus':'in the quiet in the stillness i know that you are God',
-'desert song':'this is my prayer in the desert when all thats within me feels dry',
-'this is living':'now that i have found a life in you',
-'the garden':'when my heart is troubled and the dark of night is long',
-'forever kari':'the moon and stars they wept the morning sun was dead',
-'wait on you':'i wait on you i wait on you',
-'champion':'you are the lion and the lamb you are the Lord of all',
-'what a friend we have in Jesus':'what a friend we have in Jesus all our sins and griefs to bear',
-'seek ye first':'seek ye first the kingdom of God and his righteousness',
-'as the deer':'as the deer panteth for the water so my soul longeth after thee',
+'more love more power':'More love more power more of You in my life',
+'awesome god':'Our God is an awesome God He reigns from heaven above',
+'anchor':'I have this hope as an anchor for my soul through every storm I will hold fast',
+'agnus dei':'Alleluia for the Lord God almighty reigns',
+'how deep the fathers love':'Behold the man upon a cross my sin upon His shoulders',
+'breathe':'This is my daily bread Your very word spoken to me',
+'draw me close':'You\'re all I want You\'re all I\'ve ever needed',
+'here i am lord':'Here I am Lord is it I Lord I have heard You calling in the night',
+'step by step':'Step by step You lead me and I will follow You all of my days',
+'glorious ruins':'Out of these ashes beauty will rise',
+'glory to god forever':'Glory to God glory to God glory to God forever',
+'i give you my heart':'I give You my heart I give You my soul',
+'still':'When the oceans rise and thunders roar I will soar with You above the storm',
+'none but jesus':'In all I do I honor You in all I do I honor You',
+'desert song':'All of my life in every season You are still God I have a reason to sing',
+'this is living':'This is living this is living alive in You',
+'the garden':'You\'ll lead me through the valley and shadow',
+'forever kari':'Then He arose with power over death Jesus arose with power over death',
+'wait on you':'I\'ll wait I\'ll wait I will wait upon You God',
+'champion':'The Lord of hosts is with us the God of Jacob is our refuge',
+'what a friend we have in jesus':'What a privilege to carry everything to God in prayer',
+'seek ye first':'Seek ye first the kingdom of God and His righteousness',
+'as the deer':'You alone are my strength my shield to You alone may my spirit yield',
 'sanctuary':'Lord prepare me to be a sanctuary pure and holy tried and true',
-'turn your eyes upon Jesus':'turn your eyes upon Jesus look full in his wonderful face',
-'give me faith':'i need you to soften my heart and break me apart',
-'make room':'im making room for you to do whatever you want to',
-'let the river flow':'let the poor man say i am rich in him',
-'refine me':'Lord refine me refine me purify until your glory shines',
-'child of God':'i am a child of God and he calls me his own',
-'in Jesus name':'i pray for your healing that circumstances would change',
-'known':'before the morning light before the world begins to wake',
-'gratitude brandon':'all my words fall short i got nothing new',
-'create in me a clean heart':'create in me a clean heart o God',
-'we exalt thee':'for thou o Lord art high above all the earth',
-'Lord reign in me':'over all the earth you reign on high',
-'my tribute':'how can i say thanks for the things you have done for me',
-'holy ground':'we are standing on holy ground and i know that there are angels all around',
-'there is power in the blood':'would you be free from the burden of sin there is power in the blood',
-'living water':'i heard the voice of Jesus say come unto me and rest',
-'reason i sing':'the reason that i sing is because hes so good to me',
-'let the church rise':'let the church rise from the ashes let the church fall to her knees',
-'you waited':'Lord i really blew it this time but you waited',
+'turn your eyes upon jesus':'Turn your eyes upon Jesus look full in His wonderful face',
+'give me faith':'Give me faith to trust what You say that You\'re good and Your love is great',
+'make room':'I\'m making room for You come on in',
+'let the river flow':'Let the river flow let the river flow',
+'refine me':'Refine me Lord through and through until I only want You',
+'child of god':'I am a child of God and He calls me His own',
+'in jesus name':'In Jesus\' name I pray',
+'known':'I am known by You and I know You\'re for me',
+'gratitude brandon':'So I throw up my hands praise You again and again',
+'create in me a clean heart':'Create in me a clean heart O God',
+'we exalt thee':'We exalt Thee we exalt Thee we exalt Thee O Lord',
+'lord reign in me':'Lord reign in me reign in Your power',
+'my tribute':'To God be the glory to God be the glory',
+'holy ground':'We are standing on holy ground',
+'there is power in the blood':'There is power power wonder-working power in the blood of the Lamb',
+'living water':'Whoever thirsts let them come and drink freely',
+'reason i sing':'Hallelujah hallelujah hallelujah',
+'let the church rise':'Let the church rise let the church rise',
+'you waited':'But You waited You were patient every time',
 };
 
 function findLyric(song,artist){
@@ -1308,6 +1326,8 @@ requestAnimationFrame(loop);
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js';
 import { getDatabase, ref, push, onChildAdded, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js';
+import { getAuth, signInAnonymously }
+  from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js';
 
 const app = initializeApp({
   apiKey: 'AIzaSyCEIVIczljpfWUFWAK6RbQ6l2VoejO1kxU',
@@ -1320,25 +1340,34 @@ const app = initializeApp({
 });
 
 const db = getDatabase(app);
+const auth = getAuth(app);
 const suggestionsRef = ref(db, 'suggestions');
 
+// Silent anonymous sign-in — invisible to users, protects the database
+signInAnonymously(auth).catch(e => console.warn('Anon auth failed', e));
+
 window.saveToFirebaseAndSheets = function(text) {
-  // Launch bubble locally immediately — listener will skip it via myKeys
+  // Register a pending key BEFORE push so listener can skip it immediately
+  const tempKey = '__pending__'+Date.now();
+  myKeys.add(tempKey);
   push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
-    .then(snap => { myKeys.add(snap.key); });
+    .then(snap => {
+      myKeys.delete(tempKey);
+      myKeys.add(snap.key);
+      launchBubble(text); // launch ONCE after key is secured
+    });
   saveToSheets(text);
 };
 
 // Listen for new submissions from others only
 let initialLoadDone = false;
 onChildAdded(suggestionsRef, snap => {
-  if (!initialLoadDone) return;  // skip pre-existing on page load
-  if (myKeys.has(snap.key)) return; // skip our own submissions
+  if (!initialLoadDone) return;
+  if (myKeys.has(snap.key)) return;
   const song = snap.val()?.song;
   if (song) setTimeout(() => launchBubble(song), Math.random() * 800);
 });
-// Give Firebase time to load existing entries before listening for new ones
-setTimeout(() => { initialLoadDone = true; }, 2000);
+setTimeout(() => { initialLoadDone = true; }, 3000);
 </script>
 </body>
 </html>
