@@ -1347,16 +1347,13 @@ const suggestionsRef = ref(db, 'suggestions');
 signInAnonymously(auth).catch(e => console.warn('Anon auth failed', e));
 
 window.saveToFirebaseAndSheets = function(text) {
-  // Register a pending key BEFORE push so listener can skip it immediately
-  const tempKey = '__pending__'+Date.now();
-  myKeys.add(tempKey);
-  push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
-    .then(snap => {
-      myKeys.delete(tempKey);
-      myKeys.add(snap.key);
-      launchBubble(text); // launch ONCE after key is secured
-    });
+  // Launch bubble immediately — never block on Firebase
+  launchBubble(text);
   saveToSheets(text);
+  // Save to Firebase and track key so listener skips our own bubble
+  push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
+    .then(snap => { myKeys.add(snap.key); })
+    .catch(() => {}); // silent fail — bubble already shown
 };
 
 // Listen for new submissions from others only
