@@ -568,13 +568,10 @@ function spawnJellyfish(init=false){
     {bell:'210,165,255,',glow:'190,135,255,',tent:'200,155,255,'},  // lavender purple
     {bell:'255,160,80,', glow:'255,135,50,', tent:'255,175,100,'},  // deeper orange
   ];
-  // Cycle evenly through palettes instead of random
-  const p=pals[creatures.filter(c=>c.type==='jelly').length % pals.length];
   const jellyCount=creatures.filter(x=>x.type==='jelly').length;
-  // Divide screen into 6 horizontal zones so jellyfish spread evenly
+  const p=pals[jellyCount % pals.length];
   const zone=jellyCount%5;
   const zoneX=W()*(zone/5)+W()*(0.08+Math.random()*0.08);
-  // Alternate between small, medium, large for visual variety
   const sizeClass=jellyCount%3;
   const baseSize=sizeClass===0?14:sizeClass===1?26:38;
   creatures.push({
@@ -1103,7 +1100,7 @@ function animateLyricCanvas(lyric){
 
 const SONG_LYRICS={
 'how great is our god':'How great is our God sing with me',
-'how great thou art':'Then sings my soul how great Thou art',
+'how great thou art':'Then sings my soul my Savior God to Thee',
 'amazing grace':'Amazing grace how sweet the sound that saved a wretch like me',
 'blessed assurance':'This is my story this is my song praising my Savior',
 'great is thy faithfulness':'Morning by morning new mercies I see',
@@ -1354,28 +1351,49 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 const suggestionsRef = ref(db, 'suggestions');
 
-// Silent anonymous sign-in — invisible to users, protects the database
-signInAnonymously(auth).catch(e => console.warn('Anon auth failed', e));
+// Silent anonymous sign-in — wait for auth before enabling writes
+const authReady = signInAnonymously(auth)
+  .then(() => true)
+  .catch(e => { console.warn('Anon auth failed', e); return false; });
 
 window.saveToFirebaseAndSheets = function(text) {
-  // Launch bubble immediately — never block on Firebase
+  // Launch bubble immediately regardless of Firebase
   launchBubble(text);
   saveToSheets(text);
-  // Save to Firebase and track key so listener skips our own bubble
-  push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
-    .then(snap => { myKeys.add(snap.key); })
-    .catch(() => {}); // silent fail — bubble already shown
+  // Wait for auth then save
+  authReady.then(() => {
+    push(suggestionsRef, { song: text, timestamp: serverTimestamp() })
+      .then(snap => { myKeys.add(snap.key); })
+      .catch(e => console.warn('Push failed', e));
+  });
 };
 
-// Listen for new submissions from others only
+// Load existing bubbles on page load, then listen for new ones
 let initialLoadDone = false;
+const existingBubbles = [];
+
 onChildAdded(suggestionsRef, snap => {
-  if (!initialLoadDone) return;
-  if (myKeys.has(snap.key)) return;
   const song = snap.val()?.song;
-  if (song) setTimeout(() => launchBubble(song), Math.random() * 800);
+  if (!song) return;
+
+  if (!initialLoadDone) {
+    // Collect existing entries
+    existingBubbles.push(song);
+    return;
+  }
+  // New real-time submission from someone else
+  if (myKeys.has(snap.key)) return;
+  setTimeout(() => launchBubble(song), Math.random() * 800);
 });
-setTimeout(() => { initialLoadDone = true; }, 3000);
+
+// After collecting existing entries, stagger-launch them as bubbles
+setTimeout(() => {
+  initialLoadDone = true;
+  // Stagger existing bubbles so they don't all launch at once
+  existingBubbles.forEach((song, i) => {
+    setTimeout(() => launchBubble(song), i * 600);
+  });
+}, 2500);
 </script>
 </body>
 </html>
