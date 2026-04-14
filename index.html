@@ -199,7 +199,8 @@
 </form>
 <p id="gate-error" style="font-family:'Jost',sans-serif;font-size:12px;color:rgba(255,100,100,0.7);letter-spacing:0.08em;opacity:0;transition:opacity 0.3s;">incorrect password</p>
 <script>
-(function(){
+
+ (function(){
   const PASS='itiswell';
   const gate=document.getElementById('gate');
   const inp=document.getElementById('gate-input');
@@ -210,25 +211,29 @@
     return;
   }
 
-  setTimeout(() => {
-    document.getElementById('gate-form').addEventListener('submit', function(e){
-      e.preventDefault();
+  function check(){
+    if(inp.value === PASS){
+      sessionStorage.setItem('dd_auth','1');
+      gate.style.transition='opacity 0.7s';
+      gate.style.opacity='0';
+      setTimeout(()=>gate.style.display='none',700);
+    } else {
+      err.style.opacity='1';
+      inp.value='';
+      setTimeout(()=>err.style.opacity='0',2000);
+    }
+  }
 
-      if(inp.value === PASS){
-        sessionStorage.setItem('dd_auth','1');
-        gate.style.transition='opacity 0.7s';
-        gate.style.opacity='0';
-        setTimeout(()=>gate.style.display='none',700);
-      } else {
-        err.style.opacity='1'; 
-        inp.value='';
-        setTimeout(()=>err.style.opacity='0',2000);
-      }
-    });
-  }, 0);
+  inp.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      check();
+    }
+  });
 
   inp.focus();
 })();
+
 </script>
 <div id="ocean-bg"></div>
 <div id="water-shift"></div>
