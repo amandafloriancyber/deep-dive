@@ -82,6 +82,7 @@
   .bubble.settled {
     pointer-events:all;
     opacity:1;
+    transform:scale(0.68);
     animation:bubbleIdle var(--idle-dur,5s) ease-in-out infinite alternate;
     transition:
       transform 0.5s cubic-bezier(0.34,1.3,0.64,1),
@@ -90,12 +91,11 @@
       top  0.85s cubic-bezier(0.25,0.46,0.45,0.94);
   }
   @keyframes bubbleIdle {
-    0%  { transform:scale(var(--bubble-scale,0.68)) translateY(0px) translateX(-2px); }
-    100%{ transform:scale(var(--bubble-scale,0.68)) translateY(-7px) translateX(2px); }
+    0%  { transform:scale(0.68) translateY(0px) translateX(-2px); }
+    100%{ transform:scale(0.68) translateY(-7px) translateX(2px); }
   }
-  /* hover: lift up so text is readable */
   .bubble.settled:hover {
-    transform:scale(0.85) translateY(-22px) !important;
+    transform:scale(0.82) translateY(-12px) !important;
     animation:none !important;
     box-shadow:
       inset 0 1.5px 0 rgba(255,255,255,0.75),
@@ -917,14 +917,15 @@ function scatterBubbles(){
 
   if(distToCluster<clusterRadius){
     const t=1-(distToCluster/clusterRadius);
-    settledBubbles.forEach(b=>{
-      // Each bubble spreads outward from its OWN position away from center
-      const bx=b.origX+b.w/2, by=b.origY+b.w/2;
-      const dx=bx-cx, dy=by-cy;
-      const dist=Math.sqrt(dx*dx+dy*dy)||1;
-      const push=t*100;
-      b.el.style.left=Math.max(4,Math.min(W()-b.w-4, bx+(dx/dist)*push - b.w/2))+'px';
-      b.el.style.top =Math.max(4,Math.min(H()*0.75,  by+(dy/dist)*push - b.w/2))+'px';
+    const n=settledBubbles.length||1;
+    settledBubbles.forEach((b,i)=>{
+      // Use index-based angle so even fully overlapping bubbles spread in different directions
+      const angle=(i/n)*Math.PI*2;
+      const push=t*130;
+      const nx=cx+Math.cos(angle)*push;
+      const ny=cy+Math.sin(angle)*push*0.8;
+      b.el.style.left=Math.max(4,Math.min(W()-b.w-4, nx-b.w/2))+'px';
+      b.el.style.top =Math.max(4,Math.min(H()*0.72,  ny-b.w/2))+'px';
     });
   } else {
     settledBubbles.forEach(b=>{
