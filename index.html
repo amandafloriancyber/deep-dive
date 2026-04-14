@@ -193,10 +193,11 @@
 <div id="gate" style="position:fixed;inset:0;z-index:999;background:#020d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0px;">
   <div style="font-size:28px;color:rgba(255,255,255,0.88);margin-bottom:-8px;">♪</div>
   <p style="font-family:'Outfit',sans-serif;font-weight:200;font-size:26px;letter-spacing:0.08em;color:rgba(255,255,255,0.85);text-transform:lowercase;">deep-dive</p>
+  <form id="gate-form">
   <input id="gate-input" type="password" placeholder="password" autocomplete="off"
     style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);border-radius:40px;padding:12px 24px;color:rgba(255,255,255,0.85);font-family:'Jost',sans-serif;font-size:14px;letter-spacing:0.08em;outline:none;text-align:center;width:220px;margin-top:6px;" />
-  <p id="gate-error" style="font-family:'Jost',sans-serif;font-size:12px;color:rgba(255,100,100,0.7);letter-spacing:0.08em;opacity:0;transition:opacity 0.3s;">incorrect password</p>
-</div>
+</form>
+<p id="gate-error" style="font-family:'Jost',sans-serif;font-size:12px;color:rgba(255,100,100,0.7);letter-spacing:0.08em;opacity:0;transition:opacity 0.3s;">incorrect password</p>
 <script>
 (function(){
   const PASS='itiswell';
@@ -204,18 +205,20 @@
   const inp=document.getElementById('gate-input');
   const err=document.getElementById('gate-error');
   if(sessionStorage.getItem('dd_auth')==='1'){gate.style.display='none';return;}
-  inp.addEventListener('keyup',function(e){
-    if(e.key!=='Enter')return;
-    if(inp.value===PASS){
-      sessionStorage.setItem('dd_auth','1');
-      gate.style.transition='opacity 0.7s';
-      gate.style.opacity='0';
-      setTimeout(()=>gate.style.display='none',700);
-    } else {
-      err.style.opacity='1'; inp.value='';
-      setTimeout(()=>err.style.opacity='0',2000);
-    }
-  });
+ document.getElementById('gate-form').addEventListener('submit', function(e){
+  e.preventDefault();
+
+  if(inp.value === PASS){
+    sessionStorage.setItem('dd_auth','1');
+    gate.style.transition='opacity 0.7s';
+    gate.style.opacity='0';
+    setTimeout(()=>gate.style.display='none',700);
+  } else {
+    err.style.opacity='1'; 
+    inp.value='';
+    setTimeout(()=>err.style.opacity='0',2000);
+  }
+});
   inp.focus();
 })();
 </script>
