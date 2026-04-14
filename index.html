@@ -204,7 +204,7 @@
   const inp=document.getElementById('gate-input');
   const err=document.getElementById('gate-error');
   if(sessionStorage.getItem('dd_auth')==='1'){gate.style.display='none';return;}
-  inp.addEventListener('keydown',function(e){
+  inp.addEventListener('keyup',function(e){
     if(e.key!=='Enter')return;
     if(inp.value===PASS){
       sessionStorage.setItem('dd_auth','1');
