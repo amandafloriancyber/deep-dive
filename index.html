@@ -761,29 +761,15 @@ let expandedBubble=null;
 function getBW(text){ return Math.min(192,76+text.length*2.95); }
 
 function findClusterPos(w){
-  // Keep all bubbles in the upper-center zone
-  const zoneX=W()*0.5, zoneY=H()*0.28;
-  const spread=Math.min(W()*0.28, 180);
+  // Overlapping cluster — bubbles pile on top of each other intentionally
+  const zoneX=W()*0.5, zoneY=H()*0.26;
   if(settledBubbles.length===0) return {x:zoneX-w/2, y:zoneY-w/2};
-  let best=null,bestScore=Infinity;
-  for(let i=0;i<60;i++){
-    const angle=Math.random()*Math.PI*2;
-    const radius=(w*0.5)+Math.random()*spread;
-    const tx=zoneX+Math.cos(angle)*radius;
-    const ty=zoneY+Math.sin(angle)*radius*0.7;
-    const x=Math.max(8,Math.min(W()-w-8,tx-w/2));
-    const y=Math.max(8,Math.min(H()*0.58,ty-w/2));
-    let ok=true;
-    for(const b of settledBubbles){
-      const dx=(x+w/2)-(b.x+b.w/2),dy=(y+w/2)-(b.y+b.w/2);
-      if(Math.sqrt(dx*dx+dy*dy)<(w/2+b.w/2)*0.78){ok=false;break;}
-    }
-    if(ok){
-      const score=Math.abs(tx-zoneX)+Math.abs(ty-zoneY);
-      if(score<bestScore){bestScore=score;best={x,y};}
-    }
-  }
-  return best||{x:Math.max(8,Math.min(W()-w-8,zoneX-w/2+(Math.random()-0.5)*60)),y:Math.max(8,zoneY-w/2+(Math.random()-0.5)*30)};
+  // Place near center with small random offset — overlapping is the goal
+  const angle=Math.random()*Math.PI*2;
+  const radius=20+Math.random()*35; // very tight, definitely overlapping
+  const x=Math.max(8,Math.min(W()-w-8, zoneX+Math.cos(angle)*radius - w/2));
+  const y=Math.max(8,Math.min(H()*0.55, zoneY+Math.sin(angle)*radius*0.7 - w/2));
+  return {x,y};
 }
 
 function launchBubble(text){
@@ -910,17 +896,31 @@ function pushOthersAway(rec){
 }
 
 function scatterBubbles(){
-  settledBubbles.forEach(b=>{
-    if(b===expandedBubble)return;
-    const cx=b.x+b.w/2, cy=b.y+b.w/2;
-    const dx=cx-mouseX, dy=cy-mouseY;
-    const dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<120&&dist>0){
-      const push=(120-dist)*0.15;
-      b.el.style.left=Math.max(4,Math.min(W()-b.w-4,b.x+(dx/dist)*push))+'px';
-      b.el.style.top =Math.max(4,Math.min(H()-b.w-4,b.y+(dy/dist)*push))+'px';
-    }
-  });
+  if(settledBubbles.length===0) return;
+  if(expandedBubble) return;
+
+  const cx=settledBubbles.reduce((s,b)=>s+b.x+b.w/2,0)/settledBubbles.length;
+  const cy=settledBubbles.reduce((s,b)=>s+b.y+b.w/2,0)/settledBubbles.length;
+  const distToCluster=Math.sqrt((mouseX-cx)*(mouseX-cx)+(mouseY-cy)*(mouseY-cy));
+  const clusterRadius=160;
+
+  if(distToCluster<clusterRadius){
+    const t=1-(distToCluster/clusterRadius);
+    settledBubbles.forEach(b=>{
+      // Each bubble spreads outward from its OWN position away from center
+      const bx=b.origX+b.w/2, by=b.origY+b.w/2;
+      const dx=bx-cx, dy=by-cy;
+      const dist=Math.sqrt(dx*dx+dy*dy)||1;
+      const push=t*100;
+      b.el.style.left=Math.max(4,Math.min(W()-b.w-4, bx+(dx/dist)*push - b.w/2))+'px';
+      b.el.style.top =Math.max(4,Math.min(H()*0.75,  by+(dy/dist)*push - b.w/2))+'px';
+    });
+  } else {
+    settledBubbles.forEach(b=>{
+      b.el.style.left=b.origX+'px';
+      b.el.style.top =b.origY+'px';
+    });
+  }
 }
 
 // ── INPUT STATE MACHINE ──
@@ -941,12 +941,51 @@ function normalize(str){
 
 function expandArtist(raw){
   const n=normalize(raw);
-  if(n==='elevation'||n==='elevation worship') return 'Elevation Worship';
-  if(n==='hillsong'||n==='hillsong worship') return 'Hillsong Worship';
-  if(n==='hillsong united') return 'Hillsong United';
-  if(n==='hillsong young and free'||n==='hillsong y&f') return 'Hillsong Young & Free';
-  if(n==='bethel'||n==='bethel worship'||n==='bethel music') return 'Bethel Music';
-  // Title-case as fallback
+  const artistMap={
+    'elevation':'Elevation Worship','elevation worship':'Elevation Worship',
+    'elevatiion':'Elevation Worship','elevaton':'Elevation Worship','eleveation':'Elevation Worship',
+    'hillsong':'Hillsong Worship','hillsong worship':'Hillsong Worship',
+    'hillsong united':'Hillsong United','hillsong u':'Hillsong United',
+    'hillsong young and free':'Hillsong Young & Free',
+    'bethel':'Bethel Music','bethel worship':'Bethel Music','bethel music':'Bethel Music',
+    'bethek':'Bethel Music','bethell':'Bethel Music','bethle':'Bethel Music',
+    'chris tomlin':'Chris Tomlin','tomlin':'Chris Tomlin',
+    'passion':'Passion','passion worship':'Passion',
+    'upperroom':'UPPERROOM','upper room':'UPPERROOM',
+    'maverick city':'Maverick City Music','maverick city music':'Maverick City Music','maverick':'Maverick City Music',
+    'brandon lake':'Brandon Lake','brandon':'Brandon Lake',
+    'cory asbury':'Cory Asbury',
+    'kari jobe':'Kari Jobe','kari':'Kari Jobe',
+    'lauren daigle':'Lauren Daigle','lauren':'Lauren Daigle','daigle':'Lauren Daigle',
+    'phil wickham':'Phil Wickham','wickham':'Phil Wickham',
+    'matt redman':'Matt Redman','redman':'Matt Redman',
+    'crowder':'Crowder','david crowder':'Crowder',
+    'tauren wells':'Tauren Wells','tauren':'Tauren Wells',
+    'jeremy camp':'Jeremy Camp',
+    'anna golden':'Anna Golden','anna':'Anna Golden',
+    'abbie gamboa':'Abbie Gamboa','abby gamboa':'Abbie Gamboa','gamboa':'Abbie Gamboa',
+    'travis greene':'Travis Greene',
+    'we the kingdom':'We The Kingdom',
+    'cody carnes':'Cody Carnes',
+    'kristian stanfill':'Kristian Stanfill',
+    'housefires':'Housefires','house fires':'Housefires',
+  };
+  // Exact match first
+  if(artistMap[n]) return artistMap[n];
+  // Substring match
+  for(const key of Object.keys(artistMap)){
+    if(n.includes(key)||key.includes(n)) return artistMap[key];
+  }
+  // Fuzzy — check if input shares 80%+ chars with any key (catches typos like bethek->bethel)
+  function similar(a,b){
+    if(Math.abs(a.length-b.length)>2) return false;
+    let matches=0;
+    for(let i=0;i<Math.min(a.length,b.length);i++) if(a[i]===b[i]) matches++;
+    return matches/Math.max(a.length,b.length)>0.75;
+  }
+  for(const key of Object.keys(artistMap)){
+    if(similar(n,key)) return artistMap[key];
+  }
   return raw.replace(/\b\w/g,ch=>ch.toUpperCase());
 }
 
