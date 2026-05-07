@@ -257,7 +257,7 @@
     <h1>deep-dive</h1>
   </div>
   <div id="input-row">
-    <input id="song-input" type="text" placeholder="a worship song I'd love to dive into…" maxlength="80" autocomplete="off" />
+    <input id="song-input" type="text" placeholder="a song I'd love to dive into…" maxlength="80" autocomplete="off" />
     <button id="send-btn" title="Send">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M8 13V3M8 3L4 7M8 3L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1028,7 +1028,7 @@ function handleSubmit(){
     if(PROFANITY.test(val)){
       songInput.value='';
       songInput.placeholder="keep it clean! try another song ☁️";
-      setTimeout(()=>songInput.placeholder="a worship song I'd love to dive into…",2500);
+      setTimeout(()=>songInput.placeholder="a song I'd love to dive into…",2500);
       return;
     }
     pendingSong=val;
@@ -1078,7 +1078,7 @@ async function processSubmission(song, artist, displayText){
     songInput.style.transition='opacity 0.25s';
     songInput.style.opacity='0';
     setTimeout(()=>{
-      songInput.placeholder="a worship song I'd love to dive into…";
+      songInput.placeholder="a song I'd love to dive into…";
       songInput.style.opacity='1';
       songInput.value='';
       inputStep='song';
